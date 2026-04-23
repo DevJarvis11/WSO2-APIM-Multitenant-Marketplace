@@ -1,0 +1,58 @@
+openapi: 3.0.0
+info:
+  title: Invoice API
+  version: '1.0'
+  description: Finance tenant invoice management
+servers:
+  - url: http://localhost:4001
+paths:
+  /invoices:
+    get:
+      summary: List all invoices
+      operationId: listInvoices
+      security:
+        - OAuth2: [invoice:read]
+      responses:
+        '200':
+          description: Array of invoices
+    post:
+      summary: Create invoice
+      operationId: createInvoice
+      security:
+        - OAuth2: [invoice:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Created
+  /invoices/{id}:
+    get:
+      summary: Get invoice by ID
+      operationId: getInvoice
+      security:
+        - OAuth2: [invoice:read]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoice
+        '404':
+          description: Not found
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://localhost:9443/oauth2/token
+          scopes:
+            invoice:read: Read invoices
+            invoice:write: Create invoices

@@ -1,0 +1,30 @@
+# ~/project2-multitenant/docker-compose.yml
+version: '3.8'
+services:
+  invoice-service:
+    build: ./tenantA-finance/invoice-service
+    ports: ["4001:4001"]
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  payment-service:
+    build: ./tenantA-finance/payment-service
+    ports: ["4002:4002"]
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  shipment-service:
+    build: ./tenantB-logistics/shipment-service
+    ports: ["4003:4003"]
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  route-service:
+    build: ./tenantB-logistics/route-service
+    ports: ["4004:4004"]
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

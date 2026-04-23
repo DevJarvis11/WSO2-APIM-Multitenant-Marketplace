@@ -1,0 +1,58 @@
+openapi: 3.0.0
+info:
+  title: Shipment API
+  version: '1.0'
+  description: Logistics tenant shipment management
+servers:
+  - url: http://localhost:4003
+paths:
+  /shipments:
+    get:
+      summary: List all shipments
+      operationId: listShipments
+      security:
+        - OAuth2: [shipment:read]
+      responses:
+        '200':
+          description: Array of shipments
+    post:
+      summary: Create shipment
+      operationId: createShipment
+      security:
+        - OAuth2: [shipment:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Created
+  /shipments/{id}:
+    get:
+      summary: Get shipment by ID
+      operationId: getShipment
+      security:
+        - OAuth2: [shipment:read]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Shipment
+        '404':
+          description: Not found
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://localhost:9443/oauth2/token
+          scopes:
+            shipment:read: Read shipments
+            shipment:write: Create shipments
