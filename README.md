@@ -12,7 +12,7 @@
 
 *Two isolated tenant organisations sharing one APIM instance — complete with OAuth2 security, custom mediation, rate limiting, CI/CD, and Dev Portal theming.*
 
-[Architecture](#architecture) • [Quick Start](#quick-start) • [API Reference](#api-reference) • [Security](#security-model) • [Cert Coverage](#certification-coverage)
+[Architecture](#architecture) • [Quick Start](#quick-start) • [API Reference](#api-reference) • [Security](#security-model) 
 
 </div>
 
