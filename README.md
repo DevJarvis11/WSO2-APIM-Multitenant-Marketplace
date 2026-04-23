@@ -12,8 +12,7 @@
 
 *Two isolated tenant organisations sharing one APIM instance — complete with OAuth2 security, custom mediation, rate limiting, CI/CD, and Dev Portal theming.*
 
-[Architecture](#architecture) • [Quick Start](#quick-start) • [API Reference](#api-reference) • [Security](#security-model) • [Cert Coverage](#certification-coverage)
-
+[Architecture](#architecture) • [Quick Start](#quick-start) • [API Reference](#api-reference) • [Security](#security-model) 
 </div>
 
 ---
@@ -281,26 +280,6 @@ WSO2-APIM-Multitenant-Marketplace/
 
 ---
 
-## 🎓 Certification Coverage
-
-This project covers **88% of the WSO2 API Manager Practitioner V4** exam domains.
-
-| Domain | Weight | Status |
-|---|---|---|
-| Working with APIs | 23% | ✅ Covered |
-| Security | 20% | ✅ Covered |
-| APIM Components | 13% | ✅ Covered |
-| Architecture | 10% | ✅ Covered |
-| Rate Limiting | 6% | ✅ Covered |
-| Extending APIM | 6% | ✅ Covered |
-| Debugging & Error Handling | 4% | ✅ Covered |
-| Governance | 2% | ✅ Covered |
-| Product Administration | 2% | ✅ Covered |
-| Monetisation | 1% | ✅ Covered |
-| CI/CD | 1% | ✅ Covered |
-
----
-
 ## 🔧 apictl CI/CD
 
 ```bash
@@ -324,16 +303,3 @@ apictl import api -f ./api-definitions/invoice-api.yaml \
 
 ---
 
-## 📝 License
-
-This project is for educational purposes — WSO2 API Manager learning and certification preparation.
-
----
-
-<div align="center">
-
-Built with ❤️ for WSO2 API Manager learning
-
-⭐ Star this repo if it helped you with your WSO2 certification prep!
-
-</div>
