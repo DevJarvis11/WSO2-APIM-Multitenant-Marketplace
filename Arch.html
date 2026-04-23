@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WSO2 APIM — Multi-Tenant API Marketplace</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --blue: #1A3C6E; --lblue: #D6E4F7; --blue2: #2557A7;
+    --teal: #0F5E6E; --lteal: #D4F0F5;
+    --coral: #8B2500; --lcoral: #FDECEA;
+    --purple: #4A2D7A; --lpurple: #EDE8F7;
+    --amber: #7A4800; --lamber: #FFF3CC;
+    --green: #1A5C2A; --lgreen: #D6F5DC;
+    --gray: #444; --lgray: #F4F4F4;
+    --border: #E0E4ED;
+    --bg: #F7F9FC;
+    --white: #ffffff;
+    --text: #1a1f2e;
+    --muted: #64748b;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--blue);
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 3px solid #0d2a52;
+  }
+  .header-icon {
+    width: 36px; height: 36px;
+    background: #FF6B00;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display);
+    font-weight: 800; font-size: 14px; color: white;
+  }
+  .header-title {
+    font-family: var(--display);
+    font-weight: 700; font-size: 15px; color: white;
+  }
+  .header-sub { font-size: 11px; color: #93B4D9; margin-top: 1px; }
+  .header-badges { margin-left: auto; display: flex; gap: 6px; }
+  .hbadge {
+    background: rgba(255,255,255,0.12);
+    color: #B8D4F0; font-size: 10px; font-weight: 600;
+    padding: 3px 10px; border-radius: 99px;
+    font-family: var(--mono);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    background: white;
+    border-bottom: 1.5px solid var(--border);
+    padding: 0 24px;
+    gap: 2px;
+  }
+  .tab {
+    padding: 12px 20px;
+    font-size: 12px; font-weight: 500;
+    color: var(--muted);
+    border: none; background: none; cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1.5px;
+    font-family: var(--sans);
+    transition: all 0.15s;
+    letter-spacing: 0.01em;
+  }
+  .tab:hover { color: var(--blue); }
+  .tab.active {
+    color: var(--blue);
+    border-bottom-color: var(--blue);
+    font-weight: 700;
+  }
+
+  /* CONTENT */
+  .content { padding: 20px 24px; max-width: 900px; }
+
+  /* CARDS */
+  .card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .card-title {
+    font-family: var(--display);
+    font-size: 11px; font-weight: 700;
+    color: var(--blue); margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  /* GRID */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+
+  /* PORTAL ROW */
+  .portal-box {
+    background: var(--lblue);
+    border: 1px solid #B5D4F4;
+    border-radius: 8px; padding: 8px 10px;
+  }
+  .portal-name { font-weight: 700; color: var(--blue); font-size: 12px; }
+  .portal-desc { color: #555; font-size: 10px; margin-top: 1px; }
+
+  /* ARROW */
+  .arrow-row {
+    display: flex; flex-direction: column;
+    align-items: center; margin: 6px 0;
+  }
+  .arrow-line { width: 2px; height: 14px; background: #B0BAC8; }
+  .arrow-label { font-size: 10px; color: var(--muted); margin: 1px 0; }
+  .arrow-head {
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid #B0BAC8;
+  }
+
+  /* GATEWAY */
+  .gateway {
+    background: var(--lpurple);
+    border: 1.5px solid #C9B8F0;
+    border-radius: 10px; padding: 10px 14px;
+    text-align: center; margin-bottom: 10px;
+  }
+  .gateway strong { color: var(--purple); font-weight: 700; font-size: 13px; }
+  .gateway span { color: #666; font-size: 11px; margin-left: 8px; }
+
+  /* TENANT CARD */
+  .tenant-card {
+    border-radius: 12px; padding: 12px;
+    border: 1.5px solid;
+  }
+  .tenant-a { background: var(--lteal); border-color: #9FE1CB; }
+  .tenant-b { background: var(--lcoral); border-color: #F5C4B3; }
+  .tenant-title { font-weight: 700; font-size: 12px; margin-bottom: 8px; font-family: var(--display); }
+  .tenant-a .tenant-title { color: var(--teal); }
+  .tenant-b .tenant-title { color: var(--coral); }
+
+  /* API MINI CARD */
+  .api-mini {
+    background: white; border-radius: 7px;
+    padding: 6px 8px; font-size: 11px;
+  }
+  .api-mini-name { font-weight: 600; }
+  .tenant-a .api-mini-name { color: var(--teal); }
+  .tenant-b .api-mini-name { color: var(--coral); }
+  .api-mini-detail { color: #666; font-size: 10px; margin-top: 2px; display: flex; align-items: center; gap: 4px; }
+
+  /* USER MINI */
+  .user-mini {
+    background: white; border-radius: 7px;
+    padding: 6px 8px;
+  }
+  .user-mini-name { font-size: 10px; font-weight: 600; font-family: var(--mono); }
+  .tenant-a .user-mini-name { color: var(--teal); }
+  .tenant-b .user-mini-name { color: var(--coral); }
+  .user-mini-role { font-size: 10px; color: #666; }
+
+  /* DOCKER ROW */
+  .docker-row {
+    background: #FFFBEA; border: 1.5px solid #EDD;
+    border-radius: 10px; padding: 10px 14px; margin-top: 10px;
+  }
+  .docker-title { font-weight: 700; color: var(--amber); font-size: 11px; margin-bottom: 8px; font-family: var(--display); }
+  .docker-box {
+    background: white; border: 1px solid #EDD;
+    border-radius: 7px; padding: 6px 8px; text-align: center;
+  }
+  .docker-name { font-weight: 600; font-size: 11px; color: var(--amber); }
+  .docker-port { font-size: 10px; color: #888; font-family: var(--mono); }
+
+  /* BADGE */
+  .badge {
+    font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 99px;
+    display: inline-block;
+  }
+  .badge-pub { background: var(--lgreen); color: var(--green); }
+  .badge-res { background: var(--lamber); color: var(--amber); }
+  .badge-blue { background: var(--lblue); color: var(--blue); }
+  .badge-purple { background: var(--lpurple); color: var(--purple); }
+
+  /* API FLOW */
+  .api-selector { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 16px; }
+  .api-btn {
+    background: var(--lgray); border: 1.5px solid var(--border);
+    border-radius: 9px; padding: 10px; cursor: pointer;
+    transition: all 0.15s; text-align: left;
+  }
+  .api-btn:hover { border-color: var(--blue); }
+  .api-btn.selected { background: var(--lblue); border-color: var(--blue); box-shadow: 0 0 0 2px rgba(26,60,110,0.15); }
+  .api-btn-name { font-weight: 700; font-size: 12px; color: var(--blue); font-family: var(--display); }
+  .api-btn-tenant { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+  /* FLOW STEPS */
+  .flow-card {
+    background: var(--lblue); border: 1.5px solid #B5D4F4;
+    border-radius: 12px; padding: 16px;
+  }
+  .flow-title { font-weight: 700; color: var(--blue); font-family: var(--display); margin-bottom: 12px; font-size: 13px; }
+  .flow-step { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; }
+  .flow-label {
+    color: white; border-radius: 5px;
+    padding: 3px 8px; font-size: 10px; font-weight: 700;
+    white-space: nowrap; font-family: var(--mono);
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .flow-detail { font-size: 12px; color: #333; padding-top: 3px; line-height: 1.4; }
+
+  .flow-empty {
+    background: var(--lgray); border-radius: 10px;
+    padding: 28px; text-align: center; color: var(--muted);
+    font-size: 12px; border: 1.5px dashed var(--border);
+  }
+
+  /* WORKFLOW */
+  .section-label {
+    font-weight: 700; font-size: 11px; color: var(--blue);
+    border-bottom: 2px solid var(--blue); padding-bottom: 5px;
+    margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+    font-family: var(--display);
+  }
+  .day-row { margin-bottom: 12px; }
+  .day-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .day-title { font-weight: 700; font-size: 13px; font-family: var(--display); }
+  .day-steps { padding-left: 16px; border-left: 2px solid; }
+  .day-step { font-size: 12px; color: #444; margin-bottom: 4px; display: flex; gap: 6px; }
+  .day-arrow { font-weight: 700; flex-shrink: 0; }
+
+  /* OAUTH FLOW */
+  .oauth-step { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
+  .oauth-num {
+    background: var(--blue); color: white;
+    border-radius: 5px; padding: 2px 8px;
+    font-size: 11px; font-weight: 700; min-width: 26px;
+    text-align: center; font-family: var(--mono); flex-shrink: 0;
+  }
+  .oauth-step-name { font-weight: 700; color: var(--blue); font-size: 12px; }
+  .oauth-step-detail { color: #555; font-size: 12px; }
+
+  /* TABLES */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .data-table th {
+    padding: 8px 10px; text-align: left;
+    font-weight: 600; font-size: 11px;
+    color: white; font-family: var(--display);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .data-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #F0F0F0;
+    vertical-align: top;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:nth-child(even) td { background: #FAFBFC; }
+  .mono { font-family: var(--mono); font-size: 11px; }
+  .code-cell { font-family: var(--mono); font-size: 10px; color: var(--teal); }
+
+  /* URL GRID */
+  .url-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .url-item {
+    background: var(--lgray); border: 1px solid var(--border);
+    border-radius: 7px; padding: 7px 10px;
+  }
+  .url-name { font-weight: 700; color: var(--blue); font-size: 11px; }
+  .url-val { font-family: var(--mono); font-size: 10px; color: #555; margin-top: 2px; word-break: break-all; }
+
+  /* ERROR TABLE */
+  .err-code { font-weight: 700; font-family: var(--mono); color: var(--coral); font-size: 12px; }
+
+  /* TAB PANEL */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* SECTION SPACER */
+  .section-gap { margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-icon">W2</div>
+  <div>
+    <div class="header-title">WSO2 APIM — Multi-Tenant API Marketplace</div>
+    <div class="header-sub">finance.com · logistics.com · WSO2 4.6.0 · OAuth2 · Docker Compose</div>
+  </div>
+  <div class="header-badges">
+    <span class="hbadge">4 APIs</span>
+    <span class="hbadge">2 Tenants</span>
+    <span class="hbadge">88% Cert Coverage</span>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('arch',this)">Architecture</button>
+  <button class="tab" onclick="showTab('flow',this)">API Flow</button>
+  <button class="tab" onclick="showTab('workflow',this)">User Workflow</button>
+  <button class="tab" onclick="showTab('creds',this)">Credentials & Ports</button>
+</div>
+
+<!-- ═══ ARCHITECTURE ═══ -->
+<div id="tab-arch" class="tab-panel active">
+<div class="content">
+
+  <!-- Control Plane -->
+  <div class="card">
+    <div class="card-title">WSO2 APIM 4.6 — Control Plane · port 9443</div>
+    <div class="grid4">
+      <div class="portal-box"><div class="portal-name">Publisher</div><div class="portal-desc">Create & manage APIs</div></div>
+      <div class="portal-box"><div class="portal-name">Dev Portal</div><div class="portal-desc">Subscribe & consume</div></div>
+      <div class="portal-box"><div class="portal-name">Admin</div><div class="portal-desc">Policies & throttling</div></div>
+      <div class="portal-box"><div class="portal-name">Carbon Console</div><div class="portal-desc">Tenants & users</div></div>
+    </div>
+  </div>
+
+  <div class="arrow-row"><div class="arrow-line"></div><div class="arrow-label">routes through</div><div class="arrow-head"></div></div>
+
+  <!-- Gateway -->
+  <div class="gateway">
+    <strong>API Gateway</strong>
+    <span>HTTPS :8243 / HTTP :8280 — OAuth2 validation · throttling · mediation · routing</span>
+  </div>
+
+  <!-- Tenants -->
+  <div class="grid2" style="margin-bottom:10px">
+    <div class="tenant-card tenant-a">
+      <div class="tenant-title">TenantA — finance.com</div>
+      <div class="grid2" style="margin-bottom:8px">
+        <div class="api-mini">
+          <div class="api-mini-name">Invoice API</div>
+          <div class="api-mini-detail">:4001 · <span class="badge badge-res">Restricted</span></div>
+        </div>
+        <div class="api-mini">
+          <div class="api-mini-name">Payment API</div>
+          <div class="api-mini-detail">:4002 · <span class="badge badge-pub">Public</span></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="user-mini"><div class="user-mini-name">alice@finance.com</div><div class="user-mini-role">Publisher · Creator</div></div>
+        <div class="user-mini"><div class="user-mini-name">bob@finance.com</div><div class="user-mini-role">Subscriber · FinanceApp</div></div>
+      </div>
+    </div>
+    <div class="tenant-card tenant-b">
+      <div class="tenant-title">TenantB — logistics.com</div>
+      <div class="grid2" style="margin-bottom:8px">
+        <div class="api-mini">
+          <div class="api-mini-name">Shipment API</div>
+          <div class="api-mini-detail">:4003 · <span class="badge badge-res">Restricted</span></div>
+        </div>
+        <div class="api-mini">
+          <div class="api-mini-name">Route API</div>
+          <div class="api-mini-detail">:4004 · <span class="badge badge-pub">Public</span></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="user-mini"><div class="user-mini-name">carol@logistics.com</div><div class="user-mini-role">Publisher · Creator</div></div>
+        <div class="user-mini"><div class="user-mini-name">dave@logistics.com</div><div class="user-mini-role">Subscriber · LogisticsApp</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow-row"><div class="arrow-line"></div><div class="arrow-label">backend calls</div><div class="arrow-head"></div></div>
+
+  <!-- Docker -->
+  <div class="docker-row">
+    <div class="docker-title">Docker Compose — Node.js/Express backends (static JSON · no database)</div>
+    <div class="grid4">
+      <div class="docker-box"><div class="docker-name">invoice-service</div><div class="docker-port">:4001</div></div>
+      <div class="docker-box"><div class="docker-name">payment-service</div><div class="docker-port">:4002</div></div>
+      <div class="docker-box"><div class="docker-name">shipment-service</div><div class="docker-port">:4003</div></div>
+      <div class="docker-box"><div class="docker-name">route-service</div><div class="docker-port">:4004</div></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══ API FLOW ═══ -->
+<div id="tab-flow" class="tab-panel">
+<div class="content">
+
+  <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Click an API to see its complete 10-step request flow through WSO2.</p>
+
+  <div class="api-selector">
+    <div class="api-btn" onclick="selectApi('invoice',this)">
+      <div class="api-btn-name">Invoice API</div>
+      <div class="api-btn-tenant">finance.com</div>
+      <div style="margin-top:5px"><span class="badge badge-res">Restricted</span></div>
+    </div>
+    <div class="api-btn" onclick="selectApi('payment',this)">
+      <div class="api-btn-name">Payment API</div>
+      <div class="api-btn-tenant">finance.com</div>
+      <div style="margin-top:5px"><span class="badge badge-pub">Public</span></div>
+    </div>
+    <div class="api-btn" onclick="selectApi('shipment',this)">
+      <div class="api-btn-name">Shipment API</div>
+      <div class="api-btn-tenant">logistics.com</div>
+      <div style="margin-top:5px"><span class="badge badge-res">Restricted</span></div>
+    </div>
+    <div class="api-btn" onclick="selectApi('route',this)">
+      <div class="api-btn-name">Route API</div>
+      <div class="api-btn-tenant">logistics.com</div>
+      <div style="margin-top:5px"><span class="badge badge-pub">Public</span></div>
+    </div>
+  </div>
+
+  <div id="flow-detail">
+    <div class="flow-empty">Select an API above to see its complete request flow through WSO2</div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══ WORKFLOW ═══ -->
+<div id="tab-workflow" class="tab-panel">
+<div class="content">
+
+  <div class="section-gap">
+    <div class="section-label">Day-by-Day Build Workflow</div>
+
+    <div class="day-row">
+      <div class="day-header">
+        <span class="badge" style="background:var(--lamber);color:var(--amber)">Day 1</span>
+        <span class="day-title" style="color:var(--amber)">Backend Services</span>
+      </div>
+      <div class="day-steps" style="border-color:rgba(122,72,0,0.2)">
+        <div class="day-step"><span class="day-arrow" style="color:var(--amber)">→</span> npm init + npm install express in each service folder</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--amber)">→</span> Write index.js with static JSON arrays for each service</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--amber)">→</span> Create Dockerfile per service (FROM node:20-alpine)</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--amber)">→</span> Write docker-compose.yml mapping ports 4001–4004</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--amber)">→</span> docker compose up -d → verify with curl /health</div>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-header">
+        <span class="badge" style="background:var(--lteal);color:var(--teal)">Day 2</span>
+        <span class="day-title" style="color:var(--teal)">Tenants, Roles & Users</span>
+      </div>
+      <div class="day-steps" style="border-color:rgba(15,94,110,0.2)">
+        <div class="day-step"><span class="day-arrow" style="color:var(--teal)">→</span> Carbon Console → Configure → Multitenancy → Add finance.com</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--teal)">→</span> Add logistics.com same way</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--teal)">→</span> Login as financead@finance.com → create FinancePublisher + FinanceSubscriber roles</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--teal)">→</span> Create alice (publisher) + bob (subscriber) users</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--teal)">→</span> Assign Internal/publisher, Internal/creator, Internal/devops to alice</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--teal)">→</span> Repeat for logisticsad, carol, dave in logistics.com</div>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-header">
+        <span class="badge" style="background:var(--lblue);color:var(--blue)">Day 3</span>
+        <span class="day-title" style="color:var(--blue)">Publish APIs</span>
+      </div>
+      <div class="day-steps" style="border-color:rgba(26,60,110,0.2)">
+        <div class="day-step"><span class="day-arrow" style="color:var(--blue)">→</span> Write 4 OpenAPI YAML files with OAuth2 security schemes</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--blue)">→</span> Publisher as alice → Create API → Import OpenAPI → invoice-api.yaml</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--blue)">→</span> Portal Configurations → Visibility → Restricted → FinanceSubscriber</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--blue)">→</span> Deployments → Deploy Revision → Lifecycle → Publish</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--blue)">→</span> Login as carol → publish ShipmentAPI + RouteAPI for logistics.com</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--blue)">→</span> Create API revisions on InvoiceAPI (v1.0-stable, v1.0-with-description)</div>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-header">
+        <span class="badge" style="background:var(--lpurple);color:var(--purple)">Day 4</span>
+        <span class="day-title" style="color:var(--purple)">Dev Portal + OAuth2</span>
+      </div>
+      <div class="day-steps" style="border-color:rgba(74,45,122,0.2)">
+        <div class="day-step"><span class="day-arrow" style="color:var(--purple)">→</span> Dev Portal ?tenant=finance.com → login as bob</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--purple)">→</span> Applications → Add FinanceApp → Generate Production Keys</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--purple)">→</span> Subscribe to InvoiceAPI + PaymentAPI</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--purple)">→</span> curl POST /oauth2/token with scope=invoice:read payment:read</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--purple)">→</span> Test scope enforcement → payment:read token hits invoice API → expect 900910</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--purple)">→</span> Repeat for dave + LogisticsApp in logistics.com</div>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-header">
+        <span class="badge" style="background:var(--lcoral);color:var(--coral)">Day 5</span>
+        <span class="day-title" style="color:var(--coral)">Admin Portal</span>
+      </div>
+      <div class="day-steps" style="border-color:rgba(139,37,0,0.2)">
+        <div class="day-step"><span class="day-arrow" style="color:var(--coral)">→</span> Admin → Rate Limiting → Subscription Policies → create FinanceGold, FinanceSilver, DevTest</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--coral)">→</span> Rate Limiting → Advanced Policies → create HeaderBasedThrottle</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--coral)">→</span> Rate Limiting → Deny Policies → create BlockTestIP (192.168.100.100)</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--coral)">→</span> Tasks → Workflow → test Application Creation approval</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--coral)">→</span> Publisher → InvoiceAPI → Monetization → Enable Monetization</div>
+      </div>
+    </div>
+
+    <div class="day-row">
+      <div class="day-header">
+        <span class="badge" style="background:var(--lgreen);color:var(--green)">Day 6</span>
+        <span class="day-title" style="color:var(--green)">Mediation + CI/CD + Debug</span>
+      </div>
+      <div class="day-steps" style="border-color:rgba(26,92,42,0.2)">
+        <div class="day-step"><span class="day-arrow" style="color:var(--green)">→</span> Publisher → InvoiceAPI → Policies → add custom Synapse XML mediation</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--green)">→</span> Add X-Tenant-ID header injection in request flow → verify in docker logs</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--green)">→</span> Publisher Access Control → Restricted → FinancePublisher</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--green)">→</span> Create userTheme.json → dark blue Dev Portal branding</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--green)">→</span> apictl add env → apictl login → apictl export api InvoiceAPI</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--green)">→</span> Add wire log config to log4j2.properties → test error codes</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-gap">
+    <div class="section-label">OAuth2 Token Flow</div>
+    <div class="card">
+      <div class="oauth-step"><div class="oauth-num">1</div><div><span class="oauth-step-name">Client app</span> <span class="oauth-step-detail">— has Client ID + Secret from Dev Portal</span></div></div>
+      <div class="oauth-step"><div class="oauth-num">2</div><div><span class="oauth-step-name">POST /oauth2/token</span> <span class="oauth-step-detail">— grant_type=client_credentials + scope=invoice:read</span></div></div>
+      <div class="oauth-step"><div class="oauth-num">3</div><div><span class="oauth-step-name">WSO2 IS validates</span> <span class="oauth-step-detail">— checks client exists + subscription active</span></div></div>
+      <div class="oauth-step"><div class="oauth-num">4</div><div><span class="oauth-step-name">JWT issued</span> <span class="oauth-step-detail">— contains sub, scope, aud, exp claims</span></div></div>
+      <div class="oauth-step"><div class="oauth-num">5</div><div><span class="oauth-step-name">Client calls API</span> <span class="oauth-step-detail">— Authorization: Bearer &lt;JWT&gt;</span></div></div>
+      <div class="oauth-step"><div class="oauth-num">6</div><div><span class="oauth-step-name">Gateway validates</span> <span class="oauth-step-detail">— signature + expiry + scope + subscription</span></div></div>
+      <div class="oauth-step"><div class="oauth-num">7</div><div><span class="oauth-step-name">Backend called</span> <span class="oauth-step-detail">— X-Tenant-ID header added by mediation sequence</span></div></div>
+      <div class="oauth-step" style="margin-bottom:0"><div class="oauth-num">8</div><div><span class="oauth-step-name">Response returned</span> <span class="oauth-step-detail">— JSON data from Node.js service</span></div></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══ CREDENTIALS ═══ -->
+<div id="tab-creds" class="tab-panel">
+<div class="content">
+
+  <div class="section-gap">
+    <div class="section-label">Portal URLs</div>
+    <div class="url-grid">
+      <div class="url-item"><div class="url-name">Publisher</div><div class="url-val">https://localhost:9443/publisher</div></div>
+      <div class="url-item"><div class="url-name">Dev Portal (super)</div><div class="url-val">https://localhost:9443/devportal</div></div>
+      <div class="url-item"><div class="url-name">Dev Portal TenantA</div><div class="url-val">https://localhost:9443/devportal?tenant=finance.com</div></div>
+      <div class="url-item"><div class="url-name">Dev Portal TenantB</div><div class="url-val">https://localhost:9443/devportal?tenant=logistics.com</div></div>
+      <div class="url-item"><div class="url-name">Admin Portal</div><div class="url-val">https://localhost:9443/admin</div></div>
+      <div class="url-item"><div class="url-name">Carbon Console</div><div class="url-val">https://localhost:9443/carbon</div></div>
+      <div class="url-item"><div class="url-name">Token Endpoint</div><div class="url-val">https://localhost:9443/oauth2/token</div></div>
+      <div class="url-item"><div class="url-name">API Gateway HTTPS</div><div class="url-val">https://localhost:8243/t/{tenant}/{ctx}/1.0/</div></div>
+    </div>
+  </div>
+
+  <div class="section-gap">
+    <div class="section-label">All User Credentials</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table">
+        <thead><tr style="background:var(--blue)">
+          <th>User</th><th>Password</th><th>Tenant</th><th>Roles</th><th>Portal</th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="mono">admin</td><td class="mono">admin</td><td>super</td><td>Super Admin</td><td>All portals</td></tr>
+          <tr><td class="mono">financead@finance.com</td><td class="mono">FinAdmin@123</td><td>finance.com</td><td>Tenant Admin</td><td>Carbon Console</td></tr>
+          <tr><td class="mono">alice@finance.com</td><td class="mono">Alice@123</td><td>finance.com</td><td>Internal/publisher, creator, devops, FinancePublisher</td><td>Publisher</td></tr>
+          <tr><td class="mono">bob@finance.com</td><td class="mono">Bob@12345</td><td>finance.com</td><td>Internal/subscriber, observer, FinanceSubscriber</td><td>Dev Portal</td></tr>
+          <tr><td class="mono">logisticsad@logistics.com</td><td class="mono">LogAdmin@123</td><td>logistics.com</td><td>Tenant Admin</td><td>Carbon Console</td></tr>
+          <tr><td class="mono">carol@logistics.com</td><td class="mono">Carol@123</td><td>logistics.com</td><td>Internal/publisher, creator, devops, LogisticsPublisher</td><td>Publisher</td></tr>
+          <tr><td class="mono">dave@logistics.com</td><td class="mono">Dave@1234</td><td>logistics.com</td><td>Internal/subscriber, observer, LogisticsSubscriber</td><td>Dev Portal</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-gap">
+    <div class="section-label">OAuth2 App Credentials</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table">
+        <thead><tr style="background:var(--teal)">
+          <th>App</th><th>Owner</th><th>Client ID</th><th>Client Secret</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>FinanceApp</td><td class="mono">bob@finance.com</td><td class="code-cell">y0m_BwegSfeqfXcDXX3zi22QvWIa</td><td class="code-cell">011B0fWLqGkSq2umtnqdUzz_E6Ua</td></tr>
+          <tr><td>LogisticsApp</td><td class="mono">dave@logistics.com</td><td class="code-cell">FtvgUMmX5pEwsTRSB3ehue2_Meoa</td><td class="code-cell">Cf1yfb23tAgHgGWrn7R8z0rtn5ca</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-gap">
+    <div class="section-label">Gateway URLs</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table">
+        <thead><tr style="background:var(--purple)">
+          <th>API</th><th>Gateway URL</th><th>Scope</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Invoice API</td><td class="code-cell">https://localhost:8243/t/finance.com/invoices/1.0/invoices</td><td class="mono">invoice:read</td></tr>
+          <tr><td>Payment API</td><td class="code-cell">https://localhost:8243/t/finance.com/paymentapi/1.0/payments</td><td class="mono">payment:read</td></tr>
+          <tr><td>Shipment API</td><td class="code-cell">https://localhost:8243/t/logistics.com/shipmentapi/1.0/shipments</td><td class="mono">shipment:read</td></tr>
+          <tr><td>Route API</td><td class="code-cell">https://localhost:8243/t/logistics.com/routeapi/1.0/routes</td><td class="mono">route:read</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-gap">
+    <div class="section-label">WSO2 Error Codes — Exam Reference</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table">
+        <thead><tr style="background:var(--coral)">
+          <th>Code</th><th>HTTP</th><th>Meaning</th><th>When It Occurs</th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="err-code">900901</td><td>401</td><td>Invalid credentials</td><td>Expired or malformed JWT token</td></tr>
+          <tr><td class="err-code">900902</td><td>401</td><td>Missing credentials</td><td>No Authorization header in request</td></tr>
+          <tr><td class="err-code">900906</td><td>403</td><td>Resource forbidden</td><td>API Restricted, client lacks visibility role</td></tr>
+          <tr><td class="err-code">900908</td><td>401</td><td>Resource not found</td><td>Wrong context path or app not subscribed</td></tr>
+          <tr><td class="err-code">900910</td><td>403</td><td><strong>Scope validation failed</strong></td><td>Token scope ≠ resource scope requirement</td></tr>
+          <tr><td class="err-code">900912</td><td>429</td><td>Advanced throttle hit</td><td>Advanced policy condition triggered</td></tr>
+          <tr><td class="err-code">900914</td><td>401</td><td>Key type mismatch</td><td>Sandbox key used on production endpoint</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+const apiData = {
+  invoice: {
+    name: "Invoice API", port: 4001, tenant: "finance.com",
+    context: "/invoices", scope: "invoice:read", visibility: "Restricted", consumer: "bob",
+    steps: [
+      { label: "1. Client", color: "#444", detail: "bob@finance.com requests OAuth2 token from WSO2" },
+      { label: "2. Token endpoint", color: "#4A2D7A", detail: "POST /oauth2/token · grant_type=client_credentials · scope=invoice:read" },
+      { label: "3. JWT issued", color: "#4A2D7A", detail: "Bearer token with scope claim embedded (expires in 1 hour)" },
+      { label: "4. API Gateway", color: "#1A3C6E", detail: "https://localhost:8243/t/finance.com/invoices/1.0/invoices" },
+      { label: "5. Auth check", color: "#1A3C6E", detail: "Validate JWT signature + expiry → 900901 if invalid" },
+      { label: "6. Scope check", color: "#1A3C6E", detail: "Verify token has invoice:read scope → 900910 if missing" },
+      { label: "7. Subscription check", color: "#1A3C6E", detail: "Verify FinanceApp subscribed to InvoiceAPI → 900908 if not" },
+      { label: "8. Throttle check", color: "#1A3C6E", detail: "Check request count against tier limit → 429 if exceeded" },
+      { label: "9. Mediation", color: "#0F5E6E", detail: "Synapse XML injects X-Tenant-ID: finance.com header" },
+      { label: "10. Backend", color: "#1A5C2A", detail: "http://localhost:4001 returns 4 invoice objects as JSON" },
+    ]
+  },
+  payment: {
+    name: "Payment API", port: 4002, tenant: "finance.com",
+    context: "/paymentapi", scope: "payment:read", visibility: "Public", consumer: "bob",
+    steps: [
+      { label: "1. Client", color: "#444", detail: "bob@finance.com requests OAuth2 token" },
+      { label: "2. Token endpoint", color: "#4A2D7A", detail: "POST /oauth2/token · scope=payment:read" },
+      { label: "3. JWT issued", color: "#4A2D7A", detail: "Bearer token with payment:read scope" },
+      { label: "4. API Gateway", color: "#1A3C6E", detail: "https://localhost:8243/t/finance.com/paymentapi/1.0/payments" },
+      { label: "5. Auth check", color: "#1A3C6E", detail: "Validate JWT → 900901 if invalid" },
+      { label: "6. Scope check", color: "#1A3C6E", detail: "Verify payment:read scope → 900910 if missing" },
+      { label: "7. Subscription check", color: "#1A3C6E", detail: "Verify FinanceApp subscribed → 900908 if not" },
+      { label: "8. Throttle check", color: "#1A3C6E", detail: "Check rate limit → 429 if exceeded" },
+      { label: "9. Mediation", color: "#0F5E6E", detail: "X-Tenant-ID: finance.com header injected" },
+      { label: "10. Backend", color: "#1A5C2A", detail: "http://localhost:4002 returns 3 payment objects as JSON" },
+    ]
+  },
+  shipment: {
+    name: "Shipment API", port: 4003, tenant: "logistics.com",
+    context: "/shipmentapi", scope: "shipment:read", visibility: "Restricted", consumer: "dave",
+    steps: [
+      { label: "1. Client", color: "#444", detail: "dave@logistics.com requests OAuth2 token" },
+      { label: "2. Token endpoint", color: "#4A2D7A", detail: "POST /oauth2/token · scope=shipment:read" },
+      { label: "3. JWT issued", color: "#4A2D7A", detail: "Bearer token with shipment:read scope" },
+      { label: "4. API Gateway", color: "#1A3C6E", detail: "https://localhost:8243/t/logistics.com/shipmentapi/1.0/shipments" },
+      { label: "5. Auth check", color: "#1A3C6E", detail: "Validate JWT → 900901 if invalid" },
+      { label: "6. Scope check", color: "#1A3C6E", detail: "Verify shipment:read scope → 900910 if missing" },
+      { label: "7. Subscription check", color: "#1A3C6E", detail: "Verify LogisticsApp subscribed → 900908 if not" },
+      { label: "8. Throttle check", color: "#1A3C6E", detail: "Check rate limit → 429 if exceeded" },
+      { label: "9. Mediation", color: "#0F5E6E", detail: "X-Tenant-ID: logistics.com header injected" },
+      { label: "10. Backend", color: "#1A5C2A", detail: "http://localhost:4003 returns 3 shipment objects as JSON" },
+    ]
+  },
+  route: {
+    name: "Route API", port: 4004, tenant: "logistics.com",
+    context: "/routeapi", scope: "route:read", visibility: "Public", consumer: "dave",
+    steps: [
+      { label: "1. Client", color: "#444", detail: "dave@logistics.com requests OAuth2 token" },
+      { label: "2. Token endpoint", color: "#4A2D7A", detail: "POST /oauth2/token · scope=route:read" },
+      { label: "3. JWT issued", color: "#4A2D7A", detail: "Bearer token with route:read scope" },
+      { label: "4. API Gateway", color: "#1A3C6E", detail: "https://localhost:8243/t/logistics.com/routeapi/1.0/routes" },
+      { label: "5. Auth check", color: "#1A3C6E", detail: "Validate JWT → 900901 if invalid" },
+      { label: "6. Scope check", color: "#1A3C6E", detail: "Verify route:read scope → 900910 if missing" },
+      { label: "7. Subscription check", color: "#1A3C6E", detail: "Verify LogisticsApp subscribed → 900908 if not" },
+      { label: "8. Throttle check", color: "#1A3C6E", detail: "Check rate limit → 429 if exceeded" },
+      { label: "9. Mediation", color: "#0F5E6E", detail: "X-Tenant-ID: logistics.com header injected" },
+      { label: "10. Backend", color: "#1A5C2A", detail: "http://localhost:4004 returns 3 route objects as JSON" },
+    ]
+  }
+};
+
+let selectedApi = null;
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function selectApi(key, btn) {
+  document.querySelectorAll('.api-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedApi = key;
+
+  const api = apiData[key];
+  const stepsHtml = api.steps.map(s => `
+    <div class="flow-step">
+      <span class="flow-label" style="background:${s.color}">${s.label}</span>
+      <span class="flow-detail">${s.detail}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('flow-detail').innerHTML = `
+    <div class="flow-card">
+      <div class="flow-title">${api.name} — Complete 10-Step Request Flow</div>
+      ${stepsHtml}
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
