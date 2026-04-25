@@ -54,13 +54,13 @@ jobs:
       - name: Lint all API specs
         run: |
           echo "Linting Invoice API..."
-          spectral lint api-definitions/invoice-api.yaml --ruleset .spectral.yaml
+          spectral lint api-definitions/invoice-api.yaml --ruleset .spectral.yaml --fail-severity error
           echo "Linting Payment API..."
-          spectral lint api-definitions/payment-api.yaml --ruleset .spectral.yaml
+          spectral lint api-definitions/payment-api.yaml --ruleset .spectral.yaml --fail-severity error
           echo "Linting Shipment API..."
-          spectral lint api-definitions/shipment-api.yaml --ruleset .spectral.yaml
+          spectral lint api-definitions/shipment-api.yaml --ruleset .spectral.yaml --fail-severity error
           echo "Linting Route API..."
-          spectral lint api-definitions/route-api.yaml --ruleset .spectral.yaml
+          spectral lint api-definitions/route-api.yaml --ruleset .spectral.yaml --fail-severity error
           echo "All specs passed lint checks"
 
   deploy-tenantA:

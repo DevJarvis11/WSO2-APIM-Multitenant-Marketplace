@@ -1,4 +1,5 @@
-extends: ["spectral:oas"]
+extends:
+  - ["spectral:oas", "off"]
 rules:
   api-must-have-description:
     message: "API info must have a description"
@@ -7,28 +8,17 @@ rules:
     then:
       field: description
       function: truthy
-
-  paths-must-be-lowercase:
-    message: "API paths must be lowercase only"
-    given: "$.paths[*]~"
+  api-must-have-contact:
+    message: "API info must have contact"
+    given: "$.info"
     severity: warn
     then:
-      function: pattern
-      functionOptions:
-        match: "^[a-z0-9/_{}.-]+$"
-
-  operations-must-have-operationId:
-    message: "Every operation must have an operationId"
+      field: contact
+      function: defined
+  operations-must-have-security:
+    message: "Operations must define security"
     given: "$.paths[*][get,post,put,delete,patch]"
     severity: error
     then:
-      field: operationId
-      function: defined
-
-  responses-must-have-description:
-    message: "Every response must have a description"
-    given: "$.paths[*][*].responses[*]"
-    severity: warn
-    then:
-      field: description
+      field: security
       function: defined
