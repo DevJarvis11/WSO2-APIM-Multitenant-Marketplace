@@ -1,4 +1,4 @@
-name: WSO2 API Deployment Pipeline
+name: WSO2 API Deployment Pipeline v2
 
 on:
   push:
