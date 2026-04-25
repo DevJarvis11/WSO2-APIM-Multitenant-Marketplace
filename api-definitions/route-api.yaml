@@ -2,22 +2,32 @@ openapi: 3.0.0
 info:
   title: Route API
   version: '1.0'
-  description: Logistics tenant route information
+  description: Logistics tenant route information API
+  contact:
+    name: Logistics API Support
+    email: logistics-api@logistics.com
 servers:
   - url: http://localhost:4004
+tags:
+  - name: Routes
+    description: Route information operations
 paths:
   /routes:
     get:
+      tags: [Routes]
       summary: List all routes
+      description: Returns a list of all available routes
       operationId: listRoutes
       security:
         - OAuth2: [route:read]
       responses:
         '200':
-          description: Array of routes
+          description: Array of route objects
   /routes/{id}:
     get:
+      tags: [Routes]
       summary: Get route by ID
+      description: Returns a single route by its ID
       operationId: getRoute
       security:
         - OAuth2: [route:read]
@@ -29,9 +39,9 @@ paths:
             type: string
       responses:
         '200':
-          description: Route
+          description: Route object
         '404':
-          description: Not found
+          description: Route not found
 components:
   securitySchemes:
     OAuth2:

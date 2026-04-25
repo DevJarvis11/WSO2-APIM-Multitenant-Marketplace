@@ -2,21 +2,31 @@ openapi: 3.0.0
 info:
   title: Payment API
   version: '1.0'
-  description: Finance tenant payment management
+  description: Finance tenant payment management API
+  contact:
+    name: Finance API Support
+    email: finance-api@finance.com
 servers:
   - url: http://localhost:4002
+tags:
+  - name: Payments
+    description: Payment management operations
 paths:
   /payments:
     get:
+      tags: [Payments]
       summary: List all payments
+      description: Returns a list of all payments for the finance tenant
       operationId: listPayments
       security:
         - OAuth2: [payment:read]
       responses:
         '200':
-          description: Array of payments
+          description: Array of payment objects
     post:
+      tags: [Payments]
       summary: Create payment
+      description: Creates a new payment record
       operationId: createPayment
       security:
         - OAuth2: [payment:write]
@@ -28,10 +38,12 @@ paths:
               type: object
       responses:
         '201':
-          description: Created
+          description: Payment created successfully
   /payments/{id}:
     get:
+      tags: [Payments]
       summary: Get payment by ID
+      description: Returns a single payment by its ID
       operationId: getPayment
       security:
         - OAuth2: [payment:read]
@@ -43,9 +55,9 @@ paths:
             type: string
       responses:
         '200':
-          description: Payment
+          description: Payment object
         '404':
-          description: Not found
+          description: Payment not found
 components:
   securitySchemes:
     OAuth2:

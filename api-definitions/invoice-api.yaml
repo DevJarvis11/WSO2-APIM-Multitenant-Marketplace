@@ -2,21 +2,31 @@ openapi: 3.0.0
 info:
   title: Invoice API
   version: '1.0'
-  description: Finance tenant invoice management
+  description: Finance tenant invoice management API
+  contact:
+    name: Finance API Support
+    email: finance-api@finance.com
 servers:
   - url: http://localhost:4001
+tags:
+  - name: Invoices
+    description: Invoice management operations
 paths:
   /invoices:
     get:
+      tags: [Invoices]
       summary: List all invoices
+      description: Returns a list of all invoices for the finance tenant
       operationId: listInvoices
       security:
         - OAuth2: [invoice:read]
       responses:
         '200':
-          description: Array of invoices
+          description: Array of invoice objects
     post:
+      tags: [Invoices]
       summary: Create invoice
+      description: Creates a new invoice record
       operationId: createInvoice
       security:
         - OAuth2: [invoice:write]
@@ -28,10 +38,12 @@ paths:
               type: object
       responses:
         '201':
-          description: Created
+          description: Invoice created successfully
   /invoices/{id}:
     get:
+      tags: [Invoices]
       summary: Get invoice by ID
+      description: Returns a single invoice by its ID
       operationId: getInvoice
       security:
         - OAuth2: [invoice:read]
@@ -43,9 +55,9 @@ paths:
             type: string
       responses:
         '200':
-          description: Invoice
+          description: Invoice object
         '404':
-          description: Not found
+          description: Invoice not found
 components:
   securitySchemes:
     OAuth2:
