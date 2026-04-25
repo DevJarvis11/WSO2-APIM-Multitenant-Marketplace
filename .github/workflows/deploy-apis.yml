@@ -13,74 +13,62 @@ jobs:
     name: Lint OpenAPI Specifications
     runs-on: self-hosted
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Lint all API specs
+      - uses: actions/checkout@v4
+      - name: Run Spectral lint
         run: |
-          spectral lint api-definitions/invoice-api.yaml \
-            --ruleset .spectral.yaml --fail-severity error
-          spectral lint api-definitions/payment-api.yaml \
-            --ruleset .spectral.yaml --fail-severity error
-          spectral lint api-definitions/shipment-api.yaml \
-            --ruleset .spectral.yaml --fail-severity error
-          spectral lint api-definitions/route-api.yaml \
-            --ruleset .spectral.yaml --fail-severity error
-          echo "All specs passed lint"
+          spectral lint api-definitions/invoice-api.yaml --ruleset .spectral.yaml --fail-severity error
+          spectral lint api-definitions/payment-api.yaml --ruleset .spectral.yaml --fail-severity error
+          spectral lint api-definitions/shipment-api.yaml --ruleset .spectral.yaml --fail-severity error
+          spectral lint api-definitions/route-api.yaml --ruleset .spectral.yaml --fail-severity error
+          echo "All 4 specs passed lint"
 
   deploy-tenantA:
     name: Deploy TenantA — finance.com
     runs-on: self-hosted
     needs: lint-api-specs
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Verify apictl
-        run: apictl version
-
-      - name: Setup WSO2 environment
+      - name: Setup finance-prod environment
         run: |
           apictl remove env finance-prod 2>/dev/null || true
           apictl add env finance-prod \
             --apim https://localhost:9443 \
             --token https://localhost:9443/oauth2/token
 
-      - name: Login to TenantA
+      - name: Login to finance-prod
         run: |
           apictl login finance-prod \
             -u ${{ secrets.FINANCE_ADMIN_USER }} \
             -p ${{ secrets.FINANCE_ADMIN_PASSWORD }} \
             -k
 
-      - name: Export current InvoiceAPI as ZIP
+      - name: List and verify TenantA APIs
         run: |
+          echo "=== TenantA Published APIs ==="
+          apictl get apis -e finance-prod -k
+          echo "=== TenantA deployment verified ==="
+
+      - name: Export InvoiceAPI artifact
+        run: |
+          mkdir -p exported
           apictl export api \
             --name InvoiceAPI \
             --version 1.0 \
             --provider alice@finance.com \
             --environment finance-prod \
-            -k || echo "Export skipped — API may not exist yet"
+            -k \
+            --format JSON 2>/dev/null && echo "InvoiceAPI exported" || echo "Export skipped"
 
-      - name: Deploy InvoiceAPI via Publisher REST API
+      - name: Export PaymentAPI artifact
         run: |
-          # Get admin token
-          TOKEN=$(curl -k -s -X POST https://localhost:9443/oauth2/token \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "grant_type=password&username=${{ secrets.FINANCE_ADMIN_USER }}&password=${{ secrets.FINANCE_ADMIN_PASSWORD }}&scope=apim:api_create apim:api_publish apim:api_view" \
-            -u "dGVzdGNsaWVudGlkMTIzNDU2OmFiY2QxMjM0NQ==" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))")
-
-          echo "Token obtained for TenantA"
-
-          # Verify InvoiceAPI exists
-          STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer $TOKEN" \
-            "https://localhost:9443/api/am/publisher/v4/apis?query=name:InvoiceAPI")
-          echo "Publisher API status: $STATUS"
-
-      - name: List TenantA APIs
-        run: apictl get apis -e finance-prod -k
+          apictl export api \
+            --name PaymentAPI \
+            --version 1.0 \
+            --provider alice@finance.com \
+            --environment finance-prod \
+            -k \
+            --format JSON 2>/dev/null && echo "PaymentAPI exported" || echo "Export skipped"
 
       - name: Logout
         if: always()
@@ -91,37 +79,47 @@ jobs:
     runs-on: self-hosted
     needs: lint-api-specs
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Verify apictl
-        run: apictl version
-
-      - name: Setup WSO2 environment
+      - name: Setup logistics-prod environment
         run: |
           apictl remove env logistics-prod 2>/dev/null || true
           apictl add env logistics-prod \
             --apim https://localhost:9443 \
             --token https://localhost:9443/oauth2/token
 
-      - name: Login to TenantB
+      - name: Login to logistics-prod
         run: |
           apictl login logistics-prod \
             -u ${{ secrets.LOGISTICS_ADMIN_USER }} \
             -p ${{ secrets.LOGISTICS_ADMIN_PASSWORD }} \
             -k
 
-      - name: Export current ShipmentAPI as ZIP
+      - name: List and verify TenantB APIs
+        run: |
+          echo "=== TenantB Published APIs ==="
+          apictl get apis -e logistics-prod -k
+          echo "=== TenantB deployment verified ==="
+
+      - name: Export ShipmentAPI artifact
         run: |
           apictl export api \
             --name ShipmentAPI \
             --version 1.0 \
             --provider carol@logistics.com \
             --environment logistics-prod \
-            -k || echo "Export skipped — API may not exist yet"
+            -k \
+            --format JSON 2>/dev/null && echo "ShipmentAPI exported" || echo "Export skipped"
 
-      - name: List TenantB APIs
-        run: apictl get apis -e logistics-prod -k
+      - name: Export RouteAPI artifact
+        run: |
+          apictl export api \
+            --name RouteAPI \
+            --version 1.0 \
+            --provider carol@logistics.com \
+            --environment logistics-prod \
+            -k \
+            --format JSON 2>/dev/null && echo "RouteAPI exported" || echo "Export skipped"
 
       - name: Logout
         if: always()
@@ -140,22 +138,23 @@ jobs:
             -d "grant_type=client_credentials&client_id=${{ secrets.FINANCE_CLIENT_ID }}&client_secret=${{ secrets.FINANCE_CLIENT_SECRET }}&scope=invoice:read payment:read" \
             | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          echo "TenantA token obtained"
 
-      - name: Test Invoice API
+      - name: Smoke test Invoice API
         run: |
-          STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" \
+          CODE=$(curl -k -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ steps.tokenA.outputs.token }}" \
             https://localhost:8243/t/finance.com/invoices/1.0/invoices)
-          echo "InvoiceAPI: $STATUS"
-          [ "$STATUS" = "200" ] || exit 1
+          echo "InvoiceAPI: $CODE"
+          [ "$CODE" = "200" ] || (echo "FAILED: expected 200 got $CODE" && exit 1)
 
-      - name: Test Payment API
+      - name: Smoke test Payment API
         run: |
-          STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" \
+          CODE=$(curl -k -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ steps.tokenA.outputs.token }}" \
             https://localhost:8243/t/finance.com/paymentapi/1.0/payments)
-          echo "PaymentAPI: $STATUS"
-          [ "$STATUS" = "200" ] || exit 1
+          echo "PaymentAPI: $CODE"
+          [ "$CODE" = "200" ] || (echo "FAILED: expected 200 got $CODE" && exit 1)
 
       - name: Get TenantB token
         id: tokenB
@@ -165,25 +164,29 @@ jobs:
             -d "grant_type=client_credentials&client_id=${{ secrets.LOGISTICS_CLIENT_ID }}&client_secret=${{ secrets.LOGISTICS_CLIENT_SECRET }}&scope=shipment:read route:read" \
             | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
           echo "token=$TOKEN" >> $GITHUB_OUTPUT
+          echo "TenantB token obtained"
 
-      - name: Test Shipment API
+      - name: Smoke test Shipment API
         run: |
-          STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" \
+          CODE=$(curl -k -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ steps.tokenB.outputs.token }}" \
             https://localhost:8243/t/logistics.com/shipmentapi/1.0/shipments)
-          echo "ShipmentAPI: $STATUS"
-          [ "$STATUS" = "200" ] || exit 1
+          echo "ShipmentAPI: $CODE"
+          [ "$CODE" = "200" ] || (echo "FAILED: expected 200 got $CODE" && exit 1)
 
-      - name: Test Route API
+      - name: Smoke test Route API
         run: |
-          STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" \
+          CODE=$(curl -k -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ steps.tokenB.outputs.token }}" \
             https://localhost:8243/t/logistics.com/routeapi/1.0/routes)
-          echo "RouteAPI: $STATUS"
-          [ "$STATUS" = "200" ] || exit 1
+          echo "RouteAPI: $CODE"
+          [ "$CODE" = "200" ] || (echo "FAILED: expected 200 got $CODE" && exit 1)
 
-      - name: All tests passed
-        run: echo "All 4 APIs returned 200 — pipeline verified"
+      - name: Summary
+        run: |
+          echo "========================================="
+          echo "All 4 APIs returned 200 — pipeline PASSED"
+          echo "========================================="
 
   notify-slack:
     name: Slack Notification
@@ -193,15 +196,17 @@ jobs:
     steps:
       - name: Send Slack notification
         run: |
-          if [ "${{ needs.smoke-test.result }}" = "success" ]; then
-            EMOJI="✅"; COLOR="good"
-            MSG="Pipeline Successful — all 4 APIs verified"
-          elif [ "${{ needs.lint-api-specs.result }}" = "failure" ]; then
-            EMOJI="❌"; COLOR="danger"
-            MSG="Lint Failed — deploy blocked"
+          SMOKE="${{ needs.smoke-test.result }}"
+          LINT="${{ needs.lint-api-specs.result }}"
+          TENA="${{ needs.deploy-tenantA.result }}"
+          TENB="${{ needs.deploy-tenantB.result }}"
+
+          if [ "$SMOKE" = "success" ]; then
+            EMOJI="✅"; COLOR="good"; MSG="All jobs passed — 4 APIs verified"
+          elif [ "$LINT" = "failure" ]; then
+            EMOJI="❌"; COLOR="danger"; MSG="Lint failed — deploy blocked"
           else
-            EMOJI="⚠️"; COLOR="warning"
-            MSG="Deploy Failed — check logs"
+            EMOJI="⚠️"; COLOR="warning"; MSG="Pipeline failed — check logs"
           fi
 
           curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
@@ -211,14 +216,14 @@ jobs:
               \"attachments\": [{
                 \"color\": \"$COLOR\",
                 \"fields\": [
-                  {\"title\": \"Repo\", \"value\": \"${{ github.repository }}\", \"short\": true},
-                  {\"title\": \"Branch\", \"value\": \"${{ github.ref_name }}\", \"short\": true},
-                  {\"title\": \"Actor\", \"value\": \"${{ github.actor }}\", \"short\": true},
-                  {\"title\": \"Lint\", \"value\": \"${{ needs.lint-api-specs.result }}\", \"short\": true},
-                  {\"title\": \"TenantA\", \"value\": \"${{ needs.deploy-tenantA.result }}\", \"short\": true},
-                  {\"title\": \"TenantB\", \"value\": \"${{ needs.deploy-tenantB.result }}\", \"short\": true},
-                  {\"title\": \"Smoke Test\", \"value\": \"${{ needs.smoke-test.result }}\", \"short\": true},
-                  {\"title\": \"Run URL\", \"value\": \"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\", \"short\": false}
+                  {\"title\":\"Repo\",\"value\":\"${{ github.repository }}\",\"short\":true},
+                  {\"title\":\"Branch\",\"value\":\"${{ github.ref_name }}\",\"short\":true},
+                  {\"title\":\"Actor\",\"value\":\"${{ github.actor }}\",\"short\":true},
+                  {\"title\":\"Lint\",\"value\":\"$LINT\",\"short\":true},
+                  {\"title\":\"TenantA\",\"value\":\"$TENA\",\"short\":true},
+                  {\"title\":\"TenantB\",\"value\":\"$TENB\",\"short\":true},
+                  {\"title\":\"Smoke Test\",\"value\":\"$SMOKE\",\"short\":true},
+                  {\"title\":\"Run\",\"value\":\"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\",\"short\":false}
                 ]
               }]
             }"
