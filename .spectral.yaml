@@ -1,0 +1,34 @@
+extends: ["spectral:oas"]
+rules:
+  api-must-have-description:
+    message: "API info must have a description"
+    given: "$.info"
+    severity: error
+    then:
+      field: description
+      function: truthy
+
+  paths-must-be-lowercase:
+    message: "API paths must be lowercase only"
+    given: "$.paths[*]~"
+    severity: warn
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[a-z0-9/_{}.-]+$"
+
+  operations-must-have-operationId:
+    message: "Every operation must have an operationId"
+    given: "$.paths[*][get,post,put,delete,patch]"
+    severity: error
+    then:
+      field: operationId
+      function: defined
+
+  responses-must-have-description:
+    message: "Every response must have a description"
+    given: "$.paths[*][*].responses[*]"
+    severity: warn
+    then:
+      field: description
+      function: defined
