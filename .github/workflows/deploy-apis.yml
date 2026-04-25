@@ -33,7 +33,7 @@ jobs:
   # ─── Job 1: Lint OpenAPI specs ────────────────────────────────────────────
   lint-api-specs:
     name: Lint OpenAPI Specifications
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -108,7 +108,7 @@ jobs:
   # ─── Job 2: Deploy TenantA APIs ───────────────────────────────────────────
   deploy-tenantA:
     name: Deploy TenantA — finance.com
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: lint-api-specs
     if: |
       github.event.inputs.tenant == 'both' ||
@@ -182,7 +182,7 @@ jobs:
   # ─── Job 3: Deploy TenantB APIs ───────────────────────────────────────────
   deploy-tenantB:
     name: Deploy TenantB — logistics.com
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: lint-api-specs
     if: |
       github.event.inputs.tenant == 'both' ||
@@ -254,7 +254,7 @@ jobs:
   # ─── Job 4: Smoke test after deploy ───────────────────────────────────────
   smoke-test:
     name: Post-Deploy Smoke Test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [deploy-tenantA, deploy-tenantB]
     steps:
       - name: Checkout code
@@ -324,7 +324,7 @@ jobs:
   # ─── Job 5: Slack notification ────────────────────────────────────────────
   notify-slack:
     name: Slack Notification
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [lint-api-specs, deploy-tenantA, deploy-tenantB, smoke-test]
     if: always()
     steps:
