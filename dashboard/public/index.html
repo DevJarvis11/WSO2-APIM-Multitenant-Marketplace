@@ -1,0 +1,2682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WSO2 APIM Control Plane — Live Operations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #090d12;
+  --bg2: #0d1219;
+  --bg3: #111822;
+  --bg4: #161e2a;
+  --border: #1e2d3d;
+  --border2: #243447;
+  --text: #c8d8e8;
+  --text2: #7a9ab5;
+  --text3: #4a6a85;
+  --accent: #00d4ff;
+  --accent2: #0099cc;
+  --green: #00e676;
+  --green2: #00c853;
+  --amber: #ffab00;
+  --red: #ff3d5a;
+  --purple: #b388ff;
+  --teal: #64ffda;
+  --finance: #00d4ff;
+  --logistics: #b388ff;
+  --scan: rgba(0,212,255,0.03);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;overflow:hidden}
+
+/* SCANLINES */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
+}
+
+/* TOPBAR */
+.topbar{
+  height:52px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:16px;
+  position:fixed;top:0;left:0;right:0;z-index:100;
+}
+.topbar-logo{
+  font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:18px;
+  color:var(--accent);letter-spacing:2px;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;
+}
+.topbar-logo span{color:var(--text2);font-weight:400;font-size:13px;letter-spacing:1px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--green)}50%{opacity:.6;box-shadow:0 0 16px var(--green)}}
+.topbar-stats{display:flex;gap:24px;margin-left:auto;align-items:center}
+.tstat{display:flex;flex-direction:column;align-items:flex-end}
+.tstat-val{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);line-height:1}
+.tstat-label{font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.tstat.warn .tstat-val{color:var(--amber)}
+.tstat.ok .tstat-val{color:var(--green)}
+.topbar-time{font-family:'Space Mono',monospace;font-size:12px;color:var(--text3);border-left:1px solid var(--border);padding-left:16px}
+.notif-btn{width:32px;height:32px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;position:relative;transition:.15s}
+.notif-btn:hover{border-color:var(--border2)}
+.notif-badge{position:absolute;top:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:var(--red);font-size:9px;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace}
+
+/* SIDEBAR */
+.sidebar{
+  position:fixed;top:52px;left:0;bottom:0;width:220px;
+  background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:90;overflow-y:auto;
+}
+.sidebar::-webkit-scrollbar{width:0}
+.nav-section{padding:12px 12px 4px;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3)}
+.nav-item{
+  margin:1px 8px;border-radius:6px;cursor:pointer;
+  display:flex;align-items:center;gap:10px;padding:8px 10px;
+  font-size:13px;color:var(--text2);transition:.15s;
+  border:1px solid transparent;
+}
+.nav-item:hover{background:var(--bg3);color:var(--text);border-color:var(--border)}
+.nav-item.active{background:rgba(0,212,255,.08);color:var(--accent);border-color:rgba(0,212,255,.2)}
+.nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-family:'Space Mono',monospace;padding:1px 5px;border-radius:99px}
+.nav-badge.green{background:var(--green2);color:#000}
+.sidebar-footer{margin-top:auto;padding:12px;border-top:1px solid var(--border)}
+.env-badge{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--text2)}
+.env-badge strong{color:var(--green);font-family:'Space Mono',monospace;font-size:12px;display:block;margin-bottom:2px}
+
+/* MAIN */
+.main{
+  position:fixed;top:52px;left:220px;right:0;bottom:0;
+  overflow-y:auto;padding:20px;
+  background:var(--bg);
+}
+.main::-webkit-scrollbar{width:6px}
+.main::-webkit-scrollbar-track{background:transparent}
+.main::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* PAGES */
+.page{display:none}
+.page.active{display:block}
+
+/* CARDS */
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
+.g4{grid-template-columns:1fr 1fr 1fr 1fr}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px}
+.card-title span{color:var(--text2);font-weight:400;font-size:11px;letter-spacing:1px}
+
+/* METRIC CARDS */
+.metric-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+  padding:16px;position:relative;overflow:hidden;
+}
+.metric-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+}
+.metric-card.blue::before{background:linear-gradient(90deg,var(--accent),transparent)}
+.metric-card.green::before{background:linear-gradient(90deg,var(--green),transparent)}
+.metric-card.amber::before{background:linear-gradient(90deg,var(--amber),transparent)}
+.metric-card.red::before{background:linear-gradient(90deg,var(--red),transparent)}
+.metric-card.purple::before{background:linear-gradient(90deg,var(--purple),transparent)}
+.metric-val{font-family:'Space Mono',monospace;font-size:28px;font-weight:700;line-height:1;margin-bottom:4px}
+.metric-val.blue{color:var(--accent)}
+.metric-val.green{color:var(--green)}
+.metric-val.amber{color:var(--amber)}
+.metric-val.red{color:var(--red)}
+.metric-val.purple{color:var(--purple)}
+.metric-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
+.metric-sub{font-size:12px;color:var(--text2);margin-top:6px}
+.metric-trend{font-family:'Space Mono',monospace;font-size:11px;color:var(--green);margin-top:4px}
+.metric-trend.down{color:var(--red)}
+
+/* API HEALTH GRID */
+.api-health-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.api-tile{
+  background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:12px;cursor:pointer;transition:.15s;
+}
+.api-tile:hover{border-color:var(--border2)}
+.api-tile.up{border-left:3px solid var(--green)}
+.api-tile.warn{border-left:3px solid var(--amber)}
+.api-tile.down{border-left:3px solid var(--red)}
+.api-tile-name{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:.5px;color:var(--text);margin-bottom:4px}
+.api-tile-tenant{font-size:10px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+.api-tile-stat{display:flex;justify-content:space-between;margin-bottom:3px}
+.api-tile-stat-label{font-size:10px;color:var(--text3)}
+.api-tile-stat-val{font-family:'Space Mono',monospace;font-size:10px;color:var(--text2)}
+.api-status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
+.dot-green{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot-amber{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.dot-red{background:var(--red);box-shadow:0 0 6px var(--red)}
+
+/* CHART CONTAINERS */
+.chart-wrap{position:relative;height:180px}
+.chart-wrap.tall{height:240px}
+.chart-wrap.short{height:140px}
+
+/* EVENT FEED */
+.event-feed{height:220px;overflow-y:auto}
+.event-feed::-webkit-scrollbar{width:3px}
+.event-feed::-webkit-scrollbar-thumb{background:var(--border)}
+.event-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.event-item:last-child{border-bottom:none}
+.event-time{font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);flex-shrink:0;padding-top:2px}
+.event-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.event-text{color:var(--text2);line-height:1.4}
+.event-text strong{color:var(--text)}
+.event-tag{font-size:10px;padding:1px 6px;border-radius:4px;margin-left:6px;font-family:'Space Mono',monospace}
+.tag-ok{background:rgba(0,230,118,.15);color:var(--green)}
+.tag-err{background:rgba(255,61,90,.15);color:var(--red)}
+.tag-warn{background:rgba(255,171,0,.15);color:var(--amber)}
+.tag-info{background:rgba(0,212,255,.1);color:var(--accent)}
+
+/* TABLES */
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{
+  font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;
+  letter-spacing:2px;text-transform:uppercase;color:var(--text3);
+  padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);
+}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text2)}
+.data-table tr:hover td{background:var(--bg3)}
+.data-table tr:last-child td{border-bottom:none}
+.mono{font-family:'Space Mono',monospace;font-size:11px}
+.status-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:99px;font-family:'Space Mono',monospace}
+.pill-green{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.2)}
+.pill-amber{background:rgba(255,171,0,.12);color:var(--amber);border:1px solid rgba(255,171,0,.2)}
+.pill-red{background:rgba(255,61,90,.12);color:var(--red);border:1px solid rgba(255,61,90,.2)}
+.pill-blue{background:rgba(0,212,255,.1);color:var(--accent);border:1px solid rgba(0,212,255,.2)}
+.pill-purple{background:rgba(179,136,255,.12);color:var(--purple);border:1px solid rgba(179,136,255,.2)}
+.tenant-badge{font-size:10px;padding:2px 7px;border-radius:4px;font-family:'Space Mono',monospace}
+.finance-badge{background:rgba(0,212,255,.1);color:var(--finance);border:1px solid rgba(0,212,255,.15)}
+.logistics-badge{background:rgba(179,136,255,.1);color:var(--logistics);border:1px solid rgba(179,136,255,.15)}
+
+/* BUTTONS */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:6px;font-size:12px;font-weight:500;
+  cursor:pointer;border:1px solid;transition:.15s;font-family:'Barlow',sans-serif;
+}
+.btn-primary{background:rgba(0,212,255,.12);color:var(--accent);border-color:rgba(0,212,255,.3)}
+.btn-primary:hover{background:rgba(0,212,255,.2);border-color:var(--accent)}
+.btn-success{background:rgba(0,230,118,.1);color:var(--green);border-color:rgba(0,230,118,.25)}
+.btn-success:hover{background:rgba(0,230,118,.18)}
+.btn-danger{background:rgba(255,61,90,.1);color:var(--red);border-color:rgba(255,61,90,.25)}
+.btn-danger:hover{background:rgba(255,61,90,.18)}
+.btn-ghost{background:transparent;color:var(--text2);border-color:var(--border)}
+.btn-ghost:hover{background:var(--bg3);color:var(--text)}
+.btn-amber{background:rgba(255,171,0,.1);color:var(--amber);border-color:rgba(255,171,0,.25)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-icon{padding:6px;border-radius:5px}
+
+/* FORMS */
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;display:block}
+.form-input{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:9px 12px;font-size:13px;color:var(--text);font-family:'Barlow',sans-serif;
+  transition:.15s;outline:none;
+}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,212,255,.1)}
+.form-input::placeholder{color:var(--text3)}
+.form-select{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:9px 12px;font-size:13px;color:var(--text);font-family:'Barlow',sans-serif;
+  transition:.15s;outline:none;cursor:pointer;
+  appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a6a85' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+}
+.form-select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,212,255,.1)}
+.form-textarea{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:9px 12px;font-size:13px;color:var(--text);font-family:'Space Mono',monospace;
+  transition:.15s;outline:none;resize:vertical;min-height:100px;
+}
+.form-textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(0,212,255,.1)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+/* MODALS */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(9,13,18,.85);backdrop-filter:blur(4px);
+  z-index:1000;display:none;align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:12px;
+  width:90%;max-width:680px;max-height:85vh;display:flex;flex-direction:column;
+  box-shadow:0 24px 80px rgba(0,0,0,.6);animation:slideIn .2s ease;
+}
+.modal.wide{max-width:900px}
+@keyframes slideIn{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+.modal-header{
+  padding:20px 24px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:1px;color:var(--text)}
+.modal-close{width:28px;height:28px;border-radius:6px;background:var(--bg3);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:16px;transition:.15s}
+.modal-close:hover{color:var(--text);border-color:var(--border2)}
+.modal-body{padding:24px;overflow-y:auto}
+.modal-body::-webkit-scrollbar{width:4px}
+.modal-body::-webkit-scrollbar-thumb{background:var(--border)}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+
+/* STEPPER */
+.stepper{display:flex;align-items:center;gap:0;margin-bottom:28px}
+.step{display:flex;align-items:center;gap:8px;flex:1}
+.step:last-child{flex:0}
+.step-num{
+  width:28px;height:28px;border-radius:50%;border:2px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--text3);
+  flex-shrink:0;transition:.3s;
+}
+.step.active .step-num{border-color:var(--accent);color:var(--accent);box-shadow:0 0 10px rgba(0,212,255,.3)}
+.step.done .step-num{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.step-label{font-size:11px;color:var(--text3);white-space:nowrap}
+.step.active .step-label{color:var(--accent)}
+.step.done .step-label{color:var(--text2)}
+.step-line{flex:1;height:1px;background:var(--border);margin:0 8px}
+.step-line.done{background:var(--accent)}
+
+/* STEP PANELS */
+.step-panel{display:none}
+.step-panel.active{display:block}
+
+/* TERMINAL / LOG */
+.terminal{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:14px;font-family:'Space Mono',monospace;font-size:11px;
+  height:200px;overflow-y:auto;
+}
+.terminal::-webkit-scrollbar{width:3px}
+.terminal::-webkit-scrollbar-thumb{background:var(--border)}
+.terminal-line{margin-bottom:4px;line-height:1.6}
+.t-time{color:var(--text3)}
+.t-ok{color:var(--green)}
+.t-err{color:var(--red)}
+.t-info{color:var(--accent)}
+.t-warn{color:var(--amber)}
+.t-text{color:var(--text2)}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px;margin-bottom:16px}
+.tab{padding:6px 14px;border-radius:5px;font-size:12px;cursor:pointer;color:var(--text3);transition:.15s;font-weight:500}
+.tab.active{background:var(--bg3);color:var(--text);border:1px solid var(--border)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* SECTION HEADER */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:1px;color:var(--text)}
+.section-sub{font-size:12px;color:var(--text3);margin-top:2px}
+
+/* TOGGLE */
+.toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);cursor:pointer}
+.toggle-track{width:36px;height:20px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);position:relative;transition:.2s;cursor:pointer}
+.toggle-track.on{background:rgba(0,212,255,.2);border-color:var(--accent)}
+.toggle-thumb{width:14px;height:14px;border-radius:50%;background:var(--text3);position:absolute;top:2px;left:2px;transition:.2s}
+.toggle-track.on .toggle-thumb{left:18px;background:var(--accent)}
+
+/* PROGRESS BAR */
+.progress-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;transition:width .5s}
+.fill-green{background:var(--green)}
+.fill-amber{background:var(--amber)}
+.fill-red{background:var(--red)}
+.fill-blue{background:var(--accent)}
+
+/* TENANT CARDS */
+.tenant-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+  padding:16px;cursor:pointer;transition:.15s;
+}
+.tenant-card:hover{border-color:var(--border2)}
+.tenant-card.finance{border-top:3px solid var(--finance)}
+.tenant-card.logistics{border-top:3px solid var(--logistics)}
+.tenant-name{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;letter-spacing:.5px;color:var(--text);margin-bottom:2px}
+.tenant-domain{font-family:'Space Mono',monospace;font-size:11px;color:var(--text3);margin-bottom:12px}
+
+/* LIVE INDICATOR */
+.live-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:'Space Mono',monospace;color:var(--green);background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);border-radius:4px;padding:2px 8px}
+
+/* SPARKLINE */
+.sparkline{height:32px;display:flex;align-items:flex-end;gap:2px}
+.spark-bar{flex:1;border-radius:2px 2px 0 0;min-height:3px;background:rgba(0,212,255,.3);transition:height .3s}
+.spark-bar:last-child{background:rgba(0,212,255,.7)}
+
+/* COPY BUTTON */
+.copy-btn{
+  display:inline-flex;align-items:center;gap:4px;font-size:10px;
+  padding:3px 8px;border-radius:4px;border:1px solid var(--border);
+  background:var(--bg3);color:var(--text3);cursor:pointer;transition:.15s;
+  font-family:'Space Mono',monospace;
+}
+.copy-btn:hover{color:var(--text);border-color:var(--border2)}
+
+/* ALERTS BANNER */
+.alert-banner{
+  background:rgba(255,61,90,.08);border:1px solid rgba(255,61,90,.2);
+  border-radius:8px;padding:10px 14px;display:flex;align-items:center;
+  gap:10px;margin-bottom:12px;font-size:12px;
+}
+.alert-banner.warn{background:rgba(255,171,0,.06);border-color:rgba(255,171,0,.2)}
+.alert-banner-icon{font-size:16px}
+.alert-banner-text{color:var(--text2);flex:1}
+.alert-banner-text strong{color:var(--text)}
+.alert-banner-dismiss{color:var(--text3);cursor:pointer;padding:2px 6px;font-size:12px}
+.alert-banner-dismiss:hover{color:var(--text)}
+
+/* LOG LEVELS */
+.log-filter{display:flex;gap:6px;margin-bottom:10px}
+.log-chip{font-size:10px;padding:3px 8px;border-radius:4px;cursor:pointer;border:1px solid;font-family:'Space Mono',monospace;transition:.15s}
+.log-chip.all{border-color:var(--border);color:var(--text2);background:var(--bg3)}
+.log-chip.info{border-color:rgba(0,212,255,.3);color:var(--accent);background:rgba(0,212,255,.06)}
+.log-chip.warn{border-color:rgba(255,171,0,.3);color:var(--amber);background:rgba(255,171,0,.06)}
+.log-chip.error{border-color:rgba(255,61,90,.3);color:var(--red);background:rgba(255,61,90,.06)}
+
+/* MINI CARDS ROW */
+.mini-cards{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.mini-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:140px}
+.mini-val{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;line-height:1;margin-bottom:3px}
+.mini-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
+
+/* TAG INPUT */
+.tag-input-wrap{display:flex;flex-wrap:wrap;gap:4px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;min-height:40px;align-items:center}
+.tag-input-wrap:focus-within{border-color:var(--accent)}
+.tag-chip{background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.25);border-radius:4px;font-size:11px;padding:2px 6px;display:flex;align-items:center;gap:4px}
+.tag-chip-x{cursor:pointer;opacity:.7}
+.tag-chip-x:hover{opacity:1}
+.tag-input-inner{background:none;border:none;outline:none;color:var(--text);font-size:12px;font-family:'Barlow',sans-serif;min-width:80px}
+
+/* PILL TOGGLE */
+.pill-toggle{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:2px;gap:2px}
+.pill-opt{padding:5px 12px;border-radius:4px;font-size:11px;cursor:pointer;color:var(--text3);transition:.15s}
+.pill-opt.active{background:var(--bg3);color:var(--text);border:1px solid var(--border2)}
+
+/* ENDPOINT ROW */
+.endpoint-row{display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;margin-bottom:6px}
+.method-tag{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;min-width:52px;text-align:center}
+.m-get{background:rgba(0,212,255,.1);color:var(--accent)}
+.m-post{background:rgba(0,230,118,.1);color:var(--green)}
+.m-put{background:rgba(255,171,0,.1);color:var(--amber)}
+.m-delete{background:rgba(255,61,90,.1);color:var(--red)}
+.m-patch{background:rgba(179,136,255,.1);color:var(--purple)}
+.endpoint-path{font-family:'Space Mono',monospace;font-size:12px;color:var(--text2);flex:1}
+.endpoint-desc{font-size:11px;color:var(--text3);flex:1}
+
+/* RESPONSE PREVIEW */
+.response-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-family:'Space Mono',monospace;font-size:11px;color:var(--teal);min-height:60px;max-height:200px;overflow-y:auto}
+.response-box.error{color:var(--red)}
+
+/* LATENCY BARS */
+.latency-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.latency-name{font-size:12px;color:var(--text2);width:100px;flex-shrink:0}
+.latency-bar-wrap{flex:1;background:var(--bg3);border-radius:2px;height:6px;overflow:hidden}
+.latency-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--teal))}
+.latency-val{font-family:'Space Mono',monospace;font-size:11px;color:var(--text3);width:50px;text-align:right;flex-shrink:0}
+
+/* TOOLTIP */
+.tooltip-wrap{position:relative;display:inline-block}
+.tooltip-wrap:hover .tooltip{display:block}
+.tooltip{display:none;position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--text2);white-space:nowrap;z-index:500}
+
+/* TOP OF PAGE ACTIONS */
+.page-actions{display:flex;gap:8px;align-items:center}
+
+/* COMMAND PREVIEW */
+.cmd-preview{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:'Space Mono',monospace;font-size:11px;color:var(--teal);margin-top:8px;line-height:1.7;position:relative}
+.cmd-copy{position:absolute;top:8px;right:8px}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* INFO BOX */
+.info-box{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--text2);line-height:1.6}
+.info-box strong{color:var(--accent)}
+
+/* SECTION GRID */
+.section-grid{display:grid;gap:12px;margin-bottom:12px}
+
+/* SCROLLABLE CARD BODY */
+.card-scroll{overflow-y:auto;max-height:280px}
+.card-scroll::-webkit-scrollbar{width:3px}
+.card-scroll::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* GATEWAY URL */
+.gw-url{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:'Space Mono',monospace;font-size:11px;color:var(--teal);display:flex;align-items:center;gap:8px}
+.gw-url-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* FADE IN */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page.active{animation:fadeIn .25s ease}
+
+/* PIPELINE JOB */
+.pipeline-job{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;margin-bottom:6px;
+}
+.job-icon{font-size:16px;width:24px;text-align:center;flex-shrink:0}
+.job-name{font-size:12px;font-weight:500;color:var(--text);flex:1}
+.job-time{font-family:'Space Mono',monospace;font-size:10px;color:var(--text3)}
+.job-status{font-size:10px;font-family:'Space Mono',monospace}
+
+/* OAUTH FLOW */
+.oauth-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.oauth-num{width:24px;height:24px;border-radius:50%;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);color:var(--accent);font-family:'Space Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.oauth-content{flex:1}
+.oauth-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px}
+.oauth-desc{font-size:11px;color:var(--text3);line-height:1.5}
+
+/* TOP CONSUMERS */
+.consumer-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.consumer-row:last-child{border:none}
+.consumer-rank{font-family:'Space Mono',monospace;font-size:11px;color:var(--text3);width:20px}
+.consumer-name{font-size:12px;color:var(--text);flex:1}
+.consumer-calls{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent)}
+.consumer-bar{width:80px}
+
+/* SCOPE BADGE */
+.scope{font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(100,255,218,.08);color:var(--teal);border:1px solid rgba(100,255,218,.15);font-family:'Space Mono',monospace;margin:2px}
+
+/* SECTION TAG */
+.section-tag{display:inline-block;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:2px 8px;margin-bottom:10px}
+
+/* TOKEN BOX */
+.token-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px;font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);word-break:break-all;line-height:1.6;max-height:80px;overflow:hidden;position:relative}
+.token-box::after{content:'';position:absolute;bottom:0;left:0;right:0;height:24px;background:linear-gradient(transparent,var(--bg))}
+
+/* EMPTY STATE */
+.empty-state{padding:40px;text-align:center;color:var(--text3)}
+.empty-state-icon{font-size:32px;margin-bottom:12px}
+.empty-state-text{font-size:14px;color:var(--text2);margin-bottom:8px}
+.empty-state-sub{font-size:12px;color:var(--text3)}
+
+/* RESPONSIVE ADJUSTMENTS */
+@media(max-width:900px){
+  .g4{grid-template-columns:1fr 1fr}
+  .api-health-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">
+    ⬡ WSO2 <span>APIM 4.6 · Control Plane</span>
+  </div>
+  <div class="pulse" id="livePulse"></div>
+  <div class="live-badge">LIVE</div>
+  <div class="topbar-stats">
+    <div class="tstat">
+      <div class="tstat-val" id="tRPS">247</div>
+      <div class="tstat-label">Req/min</div>
+    </div>
+    <div class="tstat ok">
+      <div class="tstat-val" id="tUptime">99.97%</div>
+      <div class="tstat-label">Uptime</div>
+    </div>
+    <div class="tstat warn">
+      <div class="tstat-val" id="tErrRate">0.43%</div>
+      <div class="tstat-label">Error Rate</div>
+    </div>
+    <div class="tstat">
+      <div class="tstat-val" id="tTenants">2</div>
+      <div class="tstat-label">Tenants</div>
+    </div>
+  </div>
+  <div class="topbar-time" id="clock">--:--:--</div>
+  <div class="notif-btn" onclick="openModal('notifModal');renderNotifications()">🔔<div class="notif-badge" id="notifBadge">0</div></div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="nav-section">Overview</div>
+  <div class="nav-item active" onclick="showPage('overview', this)"><span class="nav-icon">📡</span> Live Operations</div>
+  <div class="nav-item" onclick="showPage('analytics', this)"><span class="nav-icon">📊</span> Analytics</div>
+
+  <div class="nav-section">Management</div>
+  <div class="nav-item" onclick="showPage('tenants', this)"><span class="nav-icon">🏢</span> Tenants </div>
+  <div class="nav-item" onclick="showPage('apis', this)"><span class="nav-icon">⚡</span> API Registry </div>
+  <div class="nav-item" onclick="showPage('publish', this)"><span class="nav-icon">🚀</span> Publish API</div>
+  <div class="nav-item" onclick="showPage('subscriptions', this)"><span class="nav-icon">🔑</span> Subscriptions</div>
+  <div class="nav-item" onclick="showPage('throttle', this)"><span class="nav-icon">⏱</span> Throttling</div>
+
+  <div class="nav-section">Developer</div>
+  <div class="nav-item" onclick="showPage('tester', this)"><span class="nav-icon">🧪</span> API Tester</div>
+  <div class="nav-item" onclick="showPage('logs', this)"><span class="nav-icon">📋</span> Live Logs </div>
+  <div class="nav-item" onclick="showPage('pipeline', this)"><span class="nav-icon">⚙️</span> CI/CD Pipeline</div>
+
+  <div class="sidebar-footer">
+    <div class="env-badge">
+      <strong>MultiTenant API</strong>
+      Marketplace
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<!-- ==================== OVERVIEW ==================== -->
+<div class="page active" id="page-overview">
+  <div id="alertsBanner"></div>
+
+  <div class="section-header">
+    <div>
+      <div class="section-title">Live Operations</div>
+      <div class="section-sub">Real-time gateway health across all tenants — auto-refreshes every 5s</div>
+    </div>
+    <div class="page-actions">
+      <div class="live-badge">● LIVE</div>
+      <button class="btn btn-ghost btn-sm" onclick="refreshAll()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <!-- Top Metrics -->
+  <div class="grid g4" style="margin-bottom:12px">
+    <div class="metric-card blue">
+      <div class="metric-val blue" id="m_rps">247</div>
+      <div class="metric-label">Requests / Min</div>
+      <div class="sparkline" id="sparkRPS"></div>
+    </div>
+    <div class="metric-card green">
+      <div class="metric-val green" id="m_p95">142ms</div>
+      <div class="metric-label">P95 Latency</div>
+      <div class="metric-trend" id="m_p95_trend">↓ 18ms from last window</div>
+    </div>
+    <div class="metric-card amber">
+      <div class="metric-val amber" id="m_errRate">0.43%</div>
+      <div class="metric-label">Error Rate</div>
+      <div class="metric-trend" id="m_err_trend">↑ 0.1% from avg</div>
+    </div>
+    <div class="metric-card purple">
+      <div class="metric-val purple" id="m_throttle">3</div>
+      <div class="metric-label">Throttle Events</div>
+      <div class="metric-sub">Last 5 minutes</div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid g2" style="margin-bottom:12px">
+    <div class="card">
+      <div class="card-title">Request Volume — By Tenant <span>last 60 min</span></div>
+      <div class="chart-wrap"><canvas id="volumeChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Response Code Distribution <span>live window</span></div>
+      <div class="chart-wrap"><canvas id="codesChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- API Health Grid -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">API Health Grid <span>— all published APIs</span></div>
+    <div class="api-health-grid" id="apiHealthGrid">
+      <!-- injected by JS -->
+    </div>
+  </div>
+
+  <!-- Bottom Row -->
+  <div class="grid g2">
+    <div class="card">
+      <div class="card-title">Event Feed <span>— live gateway events</span></div>
+      <div class="event-feed" id="eventFeed"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ANALYTICS ==================== -->
+<div class="page" id="page-analytics">
+  <div class="section-header">
+    <div><div class="section-title">Analytics</div><div class="section-sub">Performance metrics, latency percentiles, API call trends</div></div>
+    <div class="page-actions">
+      <div class="pill-toggle">
+        <div class="pill-opt active" onclick="setPillActive(this,'analytics')">1H</div>
+        <div class="pill-opt" onclick="setPillActive(this,'analytics')">6H</div>
+        <div class="pill-opt" onclick="setPillActive(this,'analytics')">24H</div>
+        <div class="pill-opt" onclick="setPillActive(this,'analytics')">7D</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g4" style="margin-bottom:12px">
+    <div class="metric-card blue"><div class="metric-val blue">18,432</div><div class="metric-label">Total Calls</div><div class="metric-sub">This hour</div></div>
+    <div class="metric-card green"><div class="metric-val green">67ms</div><div class="metric-label">P50 Latency</div></div>
+    <div class="metric-card amber"><div class="metric-val amber">142ms</div><div class="metric-label">P95 Latency</div></div>
+    <div class="metric-card red"><div class="metric-val red">380ms</div><div class="metric-label">P99 Latency</div></div>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:12px">
+    <div class="card">
+      <div class="card-title">API Call Volume — By API</div>
+      <div class="chart-wrap tall"><canvas id="apiCallsChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">Latency Breakdown — Per API</div>
+    <div id="latencyBreakdown"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">API Performance Summary</div>
+    <table class="data-table">
+      <thead><tr><th>API</th><th>Tenant</th><th>Calls (1h)</th><th>Success Rate</th><th>P50</th><th>P95</th><th>P99</th><th>Status</th></tr></thead>
+      <tbody id="perfTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== TENANTS ==================== -->
+<div class="page" id="page-tenants">
+  <div class="section-header">
+    <div><div class="section-title">Tenant Management</div><div class="section-sub">Create, configure, and monitor tenant organisations</div></div>
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="openModal('newTenantModal')">+ New Tenant</button>
+    </div>
+  </div>
+
+  <!-- Tenant Cards -->
+  <div class="grid g2" style="margin-bottom:16px" id="tenantCards"></div>
+
+  <div class="card">
+    <div class="card-title">All Tenants — Detail View</div>
+    <table class="data-table">
+      <thead><tr><th>Domain</th><th>Admin</th><th>APIs</th><th>Subscriptions</th><th>Calls (24h)</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="tenantTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== API REGISTRY ==================== -->
+<div class="page" id="page-apis">
+  <div class="section-header">
+    <div><div class="section-title">API Registry</div><div class="section-sub">All published APIs across tenants</div></div>
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="showPage('publish', document.querySelector('.nav-item:nth-child(9)'))">+ Publish New API</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <input class="form-input" style="max-width:280px" placeholder="Search APIs..." oninput="filterApis(this.value)">
+      <select class="form-select" style="max-width:160px" onchange="filterApisByTenant(this.value)">
+        <option value="">All Tenants</option>
+        <option value="finance.com">finance.com</option>
+        <option value="logistics.com">logistics.com</option>
+      </select>
+    </div>
+    <table class="data-table" id="apiRegistryTable">
+      <thead><tr><th>API Name</th><th>Version</th><th>Tenant</th><th>Endpoints</th><th>Auth</th><th>Throttle Tier</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="apiRegistryBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== PUBLISH API ==================== -->
+<div class="page" id="page-publish">
+  <div class="section-header">
+    <div><div class="section-title">Publish New API</div><div class="section-sub">4-step wizard — Basic Info → Endpoint → Security & Scopes → Review & Publish</div></div>
+  </div>
+
+  <!-- Stepper -->
+  <div class="card" style="margin-bottom:12px;padding:20px 24px">
+    <div class="stepper" id="publishStepper">
+      <div class="step active" id="pstep1"><div class="step-num">1</div><div class="step-label">Basic Info</div></div>
+      <div class="step-line" id="pline1"></div>
+      <div class="step" id="pstep2"><div class="step-num">2</div><div class="step-label">Endpoints</div></div>
+      <div class="step-line" id="pline2"></div>
+      <div class="step" id="pstep3"><div class="step-num">3</div><div class="step-label">Security</div></div>
+      <div class="step-line" id="pline3"></div>
+      <div class="step" id="pstep4"><div class="step-num">4</div><div class="step-label">Review & Publish</div></div>
+    </div>
+
+    <!-- Step 1: Basic Info -->
+    <div class="step-panel active" id="spanel1">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">API Name *</label><input class="form-input" id="api_name" placeholder="e.g. InvoiceAPI" oninput="updatePreview()"></div>
+        <div class="form-group"><label class="form-label">Version *</label><input class="form-input" id="api_version" placeholder="1.0" value="1.0" oninput="updatePreview()"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Context Path *</label><input class="form-input" id="api_context" placeholder="e.g. /invoices" oninput="updatePreview()"></div>
+        <div class="form-group"><label class="form-label">Tenant *</label>
+          <select class="form-select" id="api_tenant" onchange="updatePreview()">
+            <option value="finance.com">finance.com</option>
+            <option value="logistics.com">logistics.com</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="api_desc" rows="3" placeholder="What does this API do?"></textarea></div>
+      <div class="form-group"><label class="form-label">Tags</label>
+        <div class="tag-input-wrap" id="tagInputWrap">
+          <input class="tag-input-inner" id="tagInput" placeholder="Add tag, press Enter" onkeydown="handleTagInput(event)">
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <div class="form-label" style="margin-bottom:4px">Gateway URL Preview</div>
+        <div class="gw-url"><span>🔗</span><div class="gw-url-text" id="gwUrlPreview">https://localhost:8243/t/finance.com/invoices/1.0/</div></div>
+      </div>
+    </div>
+
+    <!-- Step 2: Endpoints -->
+    <div class="step-panel" id="spanel2">
+      <div class="form-group"><label class="form-label">Backend Endpoint URL *</label><input class="form-input" id="api_backend" placeholder="http://localhost:3001" value="http://localhost:3001"></div>
+      <div class="form-group">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <label class="form-label" style="margin:0">API Resources / Endpoints</label>
+          <button class="btn btn-ghost btn-sm" onclick="addEndpointRow()">+ Add Endpoint</button>
+        </div>
+        <div id="endpointRows">
+          <div class="endpoint-row">
+            <select class="form-select" style="width:90px;padding:6px 8px">
+              <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>PATCH</option>
+            </select>
+            <input class="form-input" placeholder="/resource/{id}" style="flex:1">
+            <input class="form-input" placeholder="Description" style="flex:1">
+            <button class="btn btn-danger btn-icon btn-sm" onclick="this.closest('.endpoint-row').remove()">✕</button>
+          </div>
+        </div>
+      </div>
+      <div class="info-box">
+        <strong>Tip:</strong> Endpoints defined here map directly to WSO2 resource-level policies. Each resource can have its own throttle tier and security policy.
+      </div>
+    </div>
+
+    <!-- Step 3: Security -->
+    <div class="step-panel" id="spanel3">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Authentication Type</label>
+          <select class="form-select" id="api_auth"><option>OAuth2</option><option>API Key</option><option>Basic Auth</option><option>None</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Throttle Tier</label>
+          <select class="form-select" id="api_tier"><option>Unlimited</option><option>Gold</option><option>Silver</option><option>Bronze</option><option>10PerMin</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">OAuth2 Scopes (comma-separated)</label>
+        <input class="form-input" id="api_scopes" placeholder="e.g. read:invoices, write:invoices">
+        <div style="margin-top:8px" id="scopePreview"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Visibility</label>
+        <select class="form-select"><option>Public</option><option>Restricted</option><option>Private</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">CORS Allowed Origins</label>
+        <input class="form-input" value="*" placeholder="* or comma-separated origins">
+      </div>
+    </div>
+
+    <!-- Step 4: Review & Publish -->
+    <div class="step-panel" id="spanel4">
+      <div id="reviewContent"></div>
+      <div class="form-group" style="margin-top:16px">
+        <label class="form-label">Generated OpenAPI YAML Preview</label>
+        <div class="terminal" id="yamlPreview" style="height:180px;color:var(--teal)"></div>
+      </div>
+    </div>
+
+    <!-- Step Actions -->
+    <div style="display:flex;justify-content:space-between;margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost" id="prevStepBtn" onclick="changeStep(-1)" style="visibility:hidden">← Previous</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="resetPublishWizard()">Reset</button>
+        <button class="btn btn-primary" id="nextStepBtn" onclick="changeStep(1)">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SUBSCRIPTIONS ==================== -->
+<div class="page" id="page-subscriptions">
+  <div class="section-header">
+    <div><div class="section-title">Subscriptions</div><div class="section-sub">All active API subscriptions across tenants</div></div>
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="openModal('newSubModal')">+ New Subscription</button>
+    </div>
+  </div>
+  <div class="card">
+    <table class="data-table">
+      <thead><tr><th>Application</th><th>API</th><th>Tenant</th><th>Tier</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+      <tbody id="subscriptionsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== THROTTLING ==================== -->
+<div class="page" id="page-throttle">
+  <div class="section-header">
+    <div><div class="section-title">Throttling Policies</div><div class="section-sub">Manage rate limiting tiers and deny rules</div></div>
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="openModal('newThrottleModal')">+ New Policy</button>
+      <button class="btn btn-danger btn-sm" onclick="openModal('denyRuleModal')">🚫 Add Deny Rule</button>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:12px">
+    <div class="card">
+      <div class="card-title">Subscription Tiers</div>
+      <table class="data-table">
+        <thead><tr><th>Tier</th><th>Limit</th><th>Unit</th><th>Overage</th></tr></thead>
+        <tbody id="throttleTiersBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Deny Rules — Blacklist</div>
+    <table class="data-table">
+      <thead><tr><th>Rule Type</th><th>Value</th><th>API</th><th>Expires</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="denyRulesBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== API TESTER ==================== -->
+<div class="page" id="page-tester">
+  <div class="section-header">
+    <div><div class="section-title">API Tester</div><div class="section-sub">Generate tokens and test APIs directly from the dashboard</div></div>
+  </div>
+
+  <div class="grid g2" style="align-items:start">
+    <div>
+      <!-- Token Generator -->
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">1. Generate OAuth2 Token</div>
+        <div class="form-group">
+          <label class="form-label">Tenant</label>
+          <select class="form-select" id="test_tenant" onchange="updateTestTenant()">
+            <option value="finance">finance.com (FinanceApp)</option>
+            <option value="logistics">logistics.com (LogisticsApp)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Grant Type</label>
+          <select class="form-select" id="test_grant">
+            <option>client_credentials</option>
+            <option>password</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Scope</label>
+          <input class="form-input" id="test_scope" placeholder="e.g. read:invoices write:invoices">
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="generateToken()">⚡ Generate Token</button>
+        <div id="tokenResult" style="margin-top:10px"></div>
+      </div>
+
+      <!-- Request Builder -->
+      <div class="card">
+        <div class="card-title">2. Build Request</div>
+        <div class="form-group">
+          <label class="form-label">Select API</label>
+          <select class="form-select" id="test_api" onchange="updateTestEndpoints()">
+            <option value="invoice">InvoiceAPI — /invoices</option>
+            <option value="payment">PaymentAPI — /payments</option>
+            <option value="shipment">ShipmentAPI — /shipments</option>
+            <option value="route">RouteAPI — /routes</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Method</label>
+            <select class="form-select" id="test_method"><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Endpoint</label>
+            <select class="form-select" id="test_endpoint"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Request Body (JSON)</label>
+          <textarea class="form-textarea" id="test_body" rows="4" placeholder='{"key": "value"}'></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Full URL</label>
+          <div class="gw-url" id="testUrlPreview"><div class="gw-url-text">https://localhost:8243/t/finance.com/invoices/1.0/invoices</div></div>
+        </div>
+        <button class="btn btn-success" style="width:100%;margin-top:4px" onclick="executeTest()">▶ Execute Request</button>
+      </div>
+    </div>
+
+    <!-- Response Panel -->
+    <div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">3. Response</div>
+        <div id="testStatusBar" style="margin-bottom:10px"></div>
+        <div class="response-box" id="testResponse">// Response will appear here after executing a request</div>
+      </div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">cURL Command</div>
+        <div class="cmd-preview" id="curlCmd">curl -k -X GET "https://localhost:8243/t/finance.com/invoices/1.0/invoices" \
+  -H "Authorization: Bearer &lt;token&gt;" \
+  -H "Content-Type: application/json"
+          <button class="copy-btn cmd-copy" onclick="copyText(document.getElementById('curlCmd').innerText.replace('Copy',''))">📋 Copy</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Request History</div>
+        <div id="testHistory" style="max-height:240px;overflow-y:auto">
+          <div class="empty-state" style="padding:20px"><div class="empty-state-text">No requests yet</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== LOGS ==================== -->
+<div class="page" id="page-logs">
+  <div class="section-header">
+    <div><div class="section-title">Live Gateway Logs</div><div class="section-sub">Wire-level log stream from WSO2 APIM</div></div>
+    <div class="page-actions">
+      <div class="toggle" onclick="toggleLiveLogs()">
+        <div class="toggle-track on" id="logToggle"></div> Live Stream
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="clearLogs()">Clear</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="log-filter">
+        <div class="log-chip all" onclick="filterLogs('all',this)">ALL</div>
+        <div class="log-chip info" onclick="filterLogs('INFO',this)">INFO</div>
+        <div class="log-chip warn" onclick="filterLogs('WARN',this)">WARN</div>
+        <div class="log-chip error" onclick="filterLogs('ERROR',this)">ERROR</div>
+      </div>
+      <div class="mini-cards" style="margin:0">
+        <div class="mini-card"><div class="mini-val" style="color:var(--green);font-size:16px" id="logCountInfo">0</div><div class="mini-label">INFO</div></div>
+        <div class="mini-card"><div class="mini-val" style="color:var(--amber);font-size:16px" id="logCountWarn">0</div><div class="mini-label">WARN</div></div>
+        <div class="mini-card"><div class="mini-val" style="color:var(--red);font-size:16px" id="logCountErr">0</div><div class="mini-label">ERROR</div></div>
+      </div>
+    </div>
+    <div class="terminal" style="height:420px" id="logTerminal"></div>
+  </div>
+</div>
+
+<!-- ==================== CI/CD PIPELINE ==================== -->
+<div class="page" id="page-pipeline">
+  <div class="section-header">
+    <div class="section-sub">GitHub Actions — WSO2-APIM-Multitenant-Marketplace · <span id="pipelineLastRefresh" style="color:var(--green)">auto-refreshing every 10s</span></div>
+    <div class="page-actions">
+      <button class="btn btn-success" onclick="triggerPipeline()">▶ Trigger Run</button>
+      <a href="https://github.com/DevJarvis11/WSO2-APIM-Multitenant-Marketplace/actions" target="_blank" class="btn btn-ghost btn-sm">View on GitHub ↗</a>
+    </div>
+  </div>
+
+  <div class="grid g4" style="margin-bottom:12px">
+    <div class="metric-card green"><div class="metric-val green">5/5</div><div class="metric-label">Jobs Passing</div></div>
+    <div class="metric-card blue"><div class="metric-val blue">2m 14s</div><div class="metric-label">Last Run Time</div></div>
+    <div class="metric-card green"><div class="metric-val green">100%</div><div class="metric-label">Pass Rate (7d)</div></div>
+    <div class="metric-card purple"><div class="metric-val purple">23</div><div class="metric-label">Total Runs</div></div>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:12px">
+    <div class="card">
+      <div class="card-title">Latest Run — Job Status</div>
+      <div id="pipelineJobs"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Run History</div>
+      <table class="data-table">
+        <thead><tr><th>Run #</th><th>Trigger</th><th>Status</th><th>Duration</th><th>Time</th></tr></thead>
+        <tbody id="pipelineHistory"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Smoke Test Results — Last Run</div>
+    <table class="data-table">
+      <thead><tr><th>API</th><th>Gateway URL</th><th>Expected</th><th>Got</th><th>Latency</th><th>Result</th></tr></thead>
+      <tbody id="smokeTestBody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- New Tenant Modal -->
+<div class="modal-overlay" id="newTenantModal">
+  <div class="modal wide">
+    <div class="modal-header">
+      <div class="modal-title">🏢 Create New Tenant</div>
+      <div class="modal-close" onclick="closeModal('newTenantModal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <!-- Stepper for tenant creation -->
+      <div class="stepper" id="tenantStepper">
+        <div class="step active" id="tstep1"><div class="step-num">1</div><div class="step-label">Organisation</div></div>
+        <div class="step-line" id="tline1"></div>
+        <div class="step" id="tstep2"><div class="step-num">2</div><div class="step-label">Admin User</div></div>
+        <div class="step-line" id="tline2"></div>
+        <div class="step" id="tstep3"><div class="step-num">3</div><div class="step-label">Roles & Permissions</div></div>
+        <div class="step-line" id="tline3"></div>
+        <div class="step" id="tstep4"><div class="step-num">4</div><div class="step-label">Provision</div></div>
+      </div>
+
+      <!-- T Step 1 -->
+      <div class="step-panel active" id="tspanel1">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Organisation Name *</label><input class="form-input" id="t_orgname" placeholder="e.g. Healthcare Inc"></div>
+          <div class="form-group"><label class="form-label">Tenant Domain *</label><input class="form-input" id="t_domain" placeholder="e.g. healthcare.com" oninput="updateTenantPreview()"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Industry Vertical</label>
+            <select class="form-select" id="t_industry">
+              <option>Telecommunications</option><option>Finance</option><option>Logistics</option><option>Healthcare</option><option>Retail</option><option>Government</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Subscription Plan</label>
+            <select class="form-select"><option>Enterprise</option><option>Professional</option><option>Starter</option></select>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" rows="2" placeholder="Brief description of this tenant organisation"></textarea></div>
+        <div class="info-box" style="margin-top:8px">
+          <strong>Dev Portal URL will be:</strong><br>
+          <span id="tenantPortalUrl" class="mono" style="color:var(--teal)">https://localhost:9443/devportal?tenant=</span>
+        </div>
+      </div>
+
+      <!-- T Step 2 -->
+      <div class="step-panel" id="tspanel2">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Admin Username *</label><input class="form-input" id="t_adminuser" placeholder="e.g. healthcareadmin"></div>
+          <div class="form-group"><label class="form-label">Admin Email *</label><input class="form-input" id="t_adminemail" placeholder="admin@healthcare.com"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Admin Password *</label><input class="form-input" type="password" id="t_adminpwd" placeholder="Min 8 chars, 1 upper, 1 special"></div>
+          <div class="form-group"><label class="form-label">Confirm Password *</label><input class="form-input" type="password" placeholder="Confirm password"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Publisher User</label><input class="form-input" placeholder="e.g. publisher@healthcare.com"></div>
+        <div class="form-group"><label class="form-label">Subscriber User</label><input class="form-input" placeholder="e.g. subscriber@healthcare.com"></div>
+      </div>
+
+      <!-- T Step 3 -->
+      <div class="step-panel" id="tspanel3">
+        <div class="info-box" style="margin-bottom:16px">The following roles will be auto-created in WSO2 and assigned to users via <strong>SCIM 2.0</strong>.</div>
+        <table class="data-table">
+          <thead><tr><th>Role Name</th><th>Permissions</th><th>Assigned To</th><th>Include</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">TenantAdmin</td><td><span class="status-pill pill-blue">Full Access</span></td><td>Admin User</td><td><input type="checkbox" checked></td></tr>
+            <tr><td class="mono">TenantPublisher</td><td><span class="status-pill pill-green">Publish APIs</span></td><td>Publisher User</td><td><input type="checkbox" checked></td></tr>
+            <tr><td class="mono">TenantSubscriber</td><td><span class="status-pill pill-amber">Subscribe</span></td><td>Subscriber User</td><td><input type="checkbox" checked></td></tr>
+            <tr><td class="mono">TenantCreator</td><td><span class="status-pill pill-purple">Create APIs</span></td><td>Publisher User</td><td><input type="checkbox"></td></tr>
+          </tbody>
+        </table>
+        <div class="form-group" style="margin-top:16px"><label class="form-label">API Visibility Default</label>
+          <select class="form-select"><option>Restricted to Tenant</option><option>Public (All Tenants)</option><option>Private</option></select>
+        </div>
+      </div>
+
+      <!-- T Step 4 -->
+      <div class="step-panel" id="tspanel4">
+        <div class="info-box" style="margin-bottom:16px">Review the provisioning commands that will execute against WSO2 Tenant Management REST API.</div>
+        <div id="tenantCmds"></div>
+        <div class="form-label" style="margin-top:16px;margin-bottom:8px">Provisioning Log</div>
+        <div class="terminal" id="tenantProvisionLog" style="height:160px"></div>
+        <div id="tenantProvisionActions" style="display:none;margin-top:12px">
+          <div class="alert-banner warn"><div class="alert-banner-icon">✅</div><div class="alert-banner-text">Tenant provisioned successfully! Dev Portal: <strong id="newTenantPortalLink"></strong></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="tPrevBtn" onclick="changeTenantStep(-1)" style="visibility:hidden">← Back</button>
+      <button class="btn btn-primary" id="tNextBtn" onclick="changeTenantStep(1)">Next →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notifications Modal -->
+<div class="modal-overlay" id="notifModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header"><div class="modal-title">🔔 Notifications</div><div class="modal-close" onclick="closeModal('notifModal')">✕</div></div>
+    <div class="modal-body" id="notifBody"></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="clearNotifications()">🗑 Clear All</button></div>
+  </div>
+</div>
+
+<!-- New Throttle Policy Modal -->
+<div class="modal-overlay" id="newThrottleModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">⏱ New Throttle Policy</div><div class="modal-close" onclick="closeModal('newThrottleModal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Policy Name *</label><input class="form-input" placeholder="e.g. PlatinumTier"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Request Limit *</label><input class="form-input" type="number" placeholder="1000"></div>
+        <div class="form-group"><label class="form-label">Time Unit</label>
+          <select class="form-select"><option>per Minute</option><option>per Hour</option><option>per Day</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Bandwidth Limit (MB)</label><input class="form-input" type="number" placeholder="Leave empty for unlimited"></div>
+      <div class="form-group"><label class="form-label">Stop on Quota Reach</label>
+        <select class="form-select"><option>Yes — block with 429</option><option>No — continue, log only</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('newThrottleModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addThrottlePolicy()">Create Policy</button>
+    </div>
+  </div>
+</div>
+
+<!-- Deny Rule Modal -->
+<div class="modal-overlay" id="denyRuleModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">🚫 Add Deny Rule</div><div class="modal-close" onclick="closeModal('denyRuleModal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Rule Type</label>
+        <select class="form-select"><option>IP Address</option><option>IP Range</option><option>Header Value</option><option>JWT Claim</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Value *</label><input class="form-input" placeholder="e.g. 192.168.1.100"></div>
+      <div class="form-group"><label class="form-label">Apply to API</label>
+        <select class="form-select"><option>All APIs</option><option>InvoiceAPI</option><option>PaymentAPI</option><option>ShipmentAPI</option><option>RouteAPI</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Expires</label><input class="form-input" type="datetime-local"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('denyRuleModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="addDenyRule()">Add Rule</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Subscription Modal -->
+<div class="modal-overlay" id="newSubModal">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">🔑 New Subscription</div><div class="modal-close" onclick="closeModal('newSubModal')">✕</div></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Application Name *</label><input class="form-input" placeholder="e.g. MyApp"></div>
+      <div class="form-group"><label class="form-label">API *</label>
+        <select class="form-select"><option>InvoiceAPI v1.0</option><option>PaymentAPI v1.0</option><option>ShipmentAPI v1.0</option><option>RouteAPI v1.0</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Throttle Tier</label>
+        <select class="form-select"><option>Gold</option><option>Silver</option><option>Bronze</option><option>Unlimited</option></select>
+      </div>
+      <div class="form-group"><label class="form-label">Tenant</label>
+        <select class="form-select"><option>finance.com</option><option>logistics.com</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('newSubModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addSubscription()">Create Subscription</button>
+    </div>
+  </div>
+</div>
+
+<!-- API Detail Modal (for clicking API tiles) -->
+<div class="modal-overlay" id="apiDetailModal">
+  <div class="modal wide">
+    <div class="modal-header">
+      <div class="modal-title" id="apiDetailTitle">API Detail</div>
+      <div class="modal-close" onclick="closeModal('apiDetailModal')">✕</div>
+    </div>
+    <div class="modal-body" id="apiDetailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('apiDetailModal')">Close</button>
+      <button class="btn btn-primary" onclick="showPage('tester',null);closeModal('apiDetailModal')">Test This API →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'http://localhost:5000/api';
+// ==================== DATA ====================
+const APIS = [
+  {name:'InvoiceAPI',version:'1.0',tenant:'finance.com',context:'/invoices',backend:'http://localhost:4001',auth:'OAuth2',tier:'Gold',status:'up',port:4001,calls:0,p50:0,p95:0,p99:0,err:0,endpoints:[{m:'GET',p:'/invoices',d:'List all invoices'},{m:'POST',p:'/invoices',d:'Create invoice'},{m:'GET',p:'/invoices/{id}',d:'Get by ID'},{m:'PUT',p:'/invoices/{id}',d:'Update invoice'},{m:'DELETE',p:'/invoices/{id}',d:'Delete invoice'}],scopes:['read:invoices','write:invoices']},
+  {name:'PaymentAPI',version:'1.0',tenant:'finance.com',context:'/paymentapi',backend:'http://localhost:4002',auth:'OAuth2',tier:'Silver',status:'up',port:4002,calls:0,p50:0,p95:0,p99:0,err:0,endpoints:[{m:'GET',p:'/payments',d:'List payments'},{m:'POST',p:'/payments',d:'Process payment'},{m:'GET',p:'/payments/{id}',d:'Get payment'}],scopes:['read:payments','write:payments']},
+  {name:'ShipmentAPI',version:'1.0',tenant:'logistics.com',context:'/shipmentapi',backend:'http://localhost:4003',auth:'OAuth2',tier:'Gold',status:'warn',port:4003,calls:0,p50:0,p95:0,p99:0,err:0,endpoints:[{m:'GET',p:'/shipments',d:'List shipments'},{m:'POST',p:'/shipments',d:'Create shipment'},{m:'GET',p:'/shipments/{id}',d:'Get shipment'},{m:'PUT',p:'/shipments/{id}',d:'Update status'}],scopes:['read:shipments','write:shipments']},
+  {name:'RouteAPI',version:'1.0',tenant:'logistics.com',context:'/routeapi',backend:'http://localhost:4004',auth:'OAuth2',tier:'Bronze',status:'up',port:4004,calls:0,p50:0,p95:0,p99:0,err:0,endpoints:[{m:'GET',p:'/routes',d:'List routes'},{m:'POST',p:'/routes',d:'Create route'},{m:'GET',p:'/routes/{id}',d:'Get route'}],scopes:['read:routes','write:routes']}
+];
+
+const TENANTS = [
+  {domain:'finance.com',name:'Finance Corp',admin:'financead@finance.com',apis:2,subs:4,calls:14650,status:'active',color:'finance',devPortal:'https://localhost:9443/devportal?tenant=finance.com',users:['alice@finance.com','bob@finance.com']},
+  {domain:'logistics.com',name:'Logistics Ltd',admin:'logisticsad@logistics.com',apis:2,subs:2,calls:3782,status:'active',color:'logistics',devPortal:'https://localhost:9443/devportal?tenant=logistics.com',users:['carol@logistics.com','dave@logistics.com']}
+];
+
+const SUBS = [
+  {app:'FinanceApp',api:'InvoiceAPI v1.0',tenant:'finance.com',tier:'Gold',status:'active',created:'2026-03-15'},
+  {app:'FinanceApp',api:'PaymentAPI v1.0',tenant:'finance.com',tier:'Silver',status:'active',created:'2026-03-15'},
+  {app:'LogisticsApp',api:'ShipmentAPI v1.0',tenant:'logistics.com',tier:'Gold',status:'active',created:'2026-03-20'},
+  {app:'LogisticsApp',api:'RouteAPI v1.0',tenant:'logistics.com',tier:'Bronze',status:'active',created:'2026-03-20'},
+  {app:'FinanceDevApp',api:'InvoiceAPI v1.0',tenant:'finance.com',tier:'Unlimited',status:'active',created:'2026-04-01'},
+  {app:'TestApp',api:'PaymentAPI v1.0',tenant:'finance.com',tier:'Bronze',status:'blocked',created:'2026-04-10'}
+];
+
+const THROTTLE_TIERS = [
+  {name:'Unlimited',limit:'Unlimited',unit:'—',overage:'N/A'},
+  {name:'Gold',limit:'10,000',unit:'per min',overage:'Block (429)'},
+  {name:'Silver',limit:'5,000',unit:'per min',overage:'Block (429)'},
+  {name:'Bronze',limit:'1,000',unit:'per min',overage:'Block (429)'},
+  {name:'10PerMin',limit:'10',unit:'per min',overage:'Block (429)'}
+];
+
+const DENY_RULES = [
+  {type:'IP Address',value:'203.0.113.45',api:'InvoiceAPI',expires:'2026-05-01',status:'active'},
+  {type:'IP Range',value:'10.0.0.0/8',api:'All APIs',expires:'Never',status:'active'},
+  {type:'Header Value',value:'X-Attacker: true',api:'PaymentAPI',expires:'2026-04-30',status:'expired'}
+];
+
+// ==================== STATE ====================
+let currentPublishStep = 1;
+let currentTenantStep = 1;
+let publishTags = [];
+let liveLogsOn = true;
+let logCounts = {INFO:0,WARN:0,ERROR:0};
+let logFilter = 'all';
+let testToken = null;
+let testHistory = [];
+let charts = {};
+let volumeHistory = Array(12).fill(0).map(()=>({f:Math.round(60+Math.random()*80),l:Math.round(30+Math.random()*50)}));
+// ==================== NAVIGATION ====================
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  // Start pipeline polling when on pipeline page, stop when leaving
+  if (id === 'pipeline') {
+    renderPipelineJobs();
+    renderPipelineHistory();
+    startPipelinePolling();
+  } else {
+    stopPipelinePolling();
+  }
+}
+
+// ==================== CLOCK ====================
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US',{hour12:false});
+}
+setInterval(updateClock,1000);
+updateClock();
+
+// ==================== MODAL ====================
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')});
+});
+
+// ==================== OVERVIEW PAGE ====================
+function renderApiHealthGrid() {
+  const g = document.getElementById('apiHealthGrid');
+  g.innerHTML = APIS.map(a=>`
+    <div class="api-tile ${a.status}" onclick="openApiDetail('${a.name}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div class="api-tile-name">${a.name}</div>
+        <span class="api-status-dot dot-${a.status==='up'?'green':a.status==='warn'?'amber':'red'}"></span>
+      </div>
+      <div class="api-tile-tenant">${a.tenant}</div>
+      <div class="api-tile-stat"><span class="api-tile-stat-label">Calls/h</span><span class="api-tile-stat-val">${a.calls.toLocaleString()}</span></div>
+      <div class="api-tile-stat"><span class="api-tile-stat-label">P95</span><span class="api-tile-stat-val">${a.p95}ms</span></div>
+      <div class="api-tile-stat"><span class="api-tile-stat-label">Errors</span><span class="api-tile-stat-val" style="color:${a.err>1?'var(--red)':'var(--text2)'}">${a.err}%</span></div>
+    </div>`).join('');
+}
+
+function renderEventFeed() {
+  const events = [
+    {t:'14:32:08',dot:'green',text:'<strong>InvoiceAPI</strong> GET /invoices/INV-001',tag:'200',tagClass:'tag-ok'},
+    {t:'14:32:06',dot:'amber',text:'<strong>ShipmentAPI</strong> throttle triggered for LogisticsApp',tag:'429',tagClass:'tag-warn'},
+    {t:'14:32:04',dot:'red',text:'<strong>PaymentAPI</strong> scope validation failed',tag:'900910',tagClass:'tag-err'},
+    {t:'14:32:01',dot:'green',text:'<strong>RouteAPI</strong> GET /routes/RT-042',tag:'200',tagClass:'tag-ok'},
+    {t:'14:31:58',dot:'red',text:'<strong>InvoiceAPI</strong> invalid token — token expired',tag:'900901',tagClass:'tag-err'},
+    {t:'14:31:55',dot:'green',text:'<strong>PaymentAPI</strong> POST /payments processed',tag:'201',tagClass:'tag-ok'},
+    {t:'14:31:52',dot:'green',text:'<strong>ShipmentAPI</strong> GET /shipments/SH-118',tag:'200',tagClass:'tag-ok'},
+    {t:'14:31:48',dot:'amber',text:'<strong>InvoiceAPI</strong> slow response 380ms',tag:'WARN',tagClass:'tag-warn'},
+  ];
+  document.getElementById('eventFeed').innerHTML = events.map(e=>`
+    <div class="event-item">
+      <div class="event-time">${e.t}</div>
+      <div class="event-dot" style="background:var(--${e.dot})"></div>
+      <div class="event-text">${e.text}<span class="event-tag ${e.tagClass}">${e.tag}</span></div>
+    </div>`).join('');
+}
+
+function renderSparkline() {
+  const s = document.getElementById('sparkRPS');
+  if(!s) return;
+  const vals = Array(10).fill(0).map(()=>Math.round(180+Math.random()*100));
+  const max = Math.max(...vals);
+  s.innerHTML = vals.map((v,i)=>`<div class="spark-bar" style="height:${Math.round(v/max*28)+4}px;${i===vals.length-1?'background:rgba(0,212,255,.8)':''}"></div>`).join('');
+}
+
+// ==================== CHARTS ====================
+const chartDefaults = {
+  responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{labels:{color:'#7a9ab5',font:{family:'Barlow Condensed',size:11},boxWidth:10}},tooltip:{backgroundColor:'#0d1219',borderColor:'#1e2d3d',borderWidth:1,titleColor:'#c8d8e8',bodyColor:'#7a9ab5'}},
+  scales:{x:{grid:{color:'rgba(30,45,61,.5)'},ticks:{color:'#4a6a85',font:{family:'Space Mono',size:9}}},y:{grid:{color:'rgba(30,45,61,.5)'},ticks:{color:'#4a6a85',font:{family:'Space Mono',size:9}}}}
+};
+
+function mkChart(id,type,data,opts){
+  const el=document.getElementById(id);if(!el)return null;
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(el.getContext('2d'),{type,data,options:{...chartDefaults,...opts}});
+  return charts[id];
+}
+
+function initVolumeChart() {
+  const labels = Array(12).fill(0).map((_,i)=>`${55-i*5}m`).reverse();
+  mkChart('volumeChart','line',{
+    labels,
+    datasets:[
+      {label:'finance.com',data:volumeHistory.map(v=>v.f),borderColor:'#00d4ff',backgroundColor:'rgba(0,212,255,.06)',tension:.4,pointRadius:0,fill:true},
+      {label:'logistics.com',data:volumeHistory.map(v=>v.l),borderColor:'#b388ff',backgroundColor:'rgba(179,136,255,.06)',tension:.4,pointRadius:0,fill:true}
+    ]
+  });
+}
+
+function initCodesChart() {
+  fetch(`${API_BASE}/gateway/statuscodes`)
+    .then(r => r.json())
+    .then(totals => {
+      const colorMap = {
+        '200':'rgba(0,230,118,.7)','201':'rgba(0,212,255,.5)',
+        '401':'rgba(255,61,90,.7)','403':'rgba(255,171,0,.7)',
+        '429':'rgba(179,136,255,.7)','500':'rgba(255,61,90,.4)'
+      };
+      const labelMap = {
+        '200':'200 OK','201':'201 Created','401':'401 Unauth',
+        '403':'403 Forbidden','429':'429 Throttled','500':'500 Error'
+      };
+
+      const labels = [];
+      const values = [];
+      const colors = [];
+
+      Object.entries(totals).forEach(([code, count]) => {
+        if (count > 0) {
+          labels.push(labelMap[code] || code);
+          values.push(count);
+          colors.push(colorMap[code] || 'rgba(100,255,218,.5)');
+        }
+      });
+
+      if (!values.length) {
+        labels.push('200 OK'); values.push(1);
+        colors.push('rgba(0,230,118,.7)');
+      }
+
+      // Force destroy existing chart
+      if (charts['codesChart']) {
+        charts['codesChart'].destroy();
+        delete charts['codesChart'];
+      }
+
+      const canvas = document.getElementById('codesChart');
+      if (!canvas) return;
+
+      // Clear canvas completely
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      charts['codesChart'] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors,
+            borderColor: 'transparent',
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: {
+                color: '#7a9ab5',
+                font: { family: 'Barlow Condensed', size: 11 },
+                boxWidth: 10
+              }
+            }
+          },
+          scales: { x: { display: false }, y: { display: false } }
+        }
+      });
+    })
+    .catch(e => console.log('Codes chart error:', e));
+}
+
+function initApiCallsChart() {
+  mkChart('apiCallsChart','bar',{
+    labels:APIS.map(a=>a.name),
+    datasets:[{label:'API Calls',data:APIS.map(a=>a.calls),backgroundColor:['rgba(0,212,255,.5)','rgba(0,212,255,.3)','rgba(179,136,255,.5)','rgba(179,136,255,.3)'],borderRadius:4}]
+  });
+}
+
+// ==================== ANALYTICS PAGE ====================
+function renderLatencyBreakdown() {
+  const el = document.getElementById('latencyBreakdown');
+  if(!el) return;
+  const max = 520;
+  el.innerHTML = APIS.map(a=>`
+    <div class="latency-row">
+      <div class="latency-name">${a.name}</div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:6px"><span style="font-size:9px;color:var(--text3);width:25px">P50</span><div class="latency-bar-wrap"><div class="latency-bar-fill" style="width:${a.p50/max*100}%;background:var(--green)"></div></div><span class="latency-val">${a.p50}ms</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><span style="font-size:9px;color:var(--text3);width:25px">P95</span><div class="latency-bar-wrap"><div class="latency-bar-fill" style="width:${a.p95/max*100}%;background:var(--amber)"></div></div><span class="latency-val">${a.p95}ms</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><span style="font-size:9px;color:var(--text3);width:25px">P99</span><div class="latency-bar-wrap"><div class="latency-bar-fill" style="width:${a.p99/max*100}%;background:var(--red)"></div></div><span class="latency-val">${a.p99}ms</span></div>
+      </div>
+    </div>`).join('');
+}
+
+function renderPerfTable() {
+  const el = document.getElementById('perfTableBody');
+  if(!el) return;
+  el.innerHTML = APIS.map(a=>`
+    <tr>
+      <td><strong>${a.name}</strong></td>
+      <td><span class="tenant-badge ${a.tenant.includes('finance')?'finance':'logistics'}-badge">${a.tenant}</span></td>
+      <td class="mono">${a.calls.toLocaleString()}</td>
+      <td><span class="mono" style="color:${100-a.err>99?'var(--green)':'var(--amber)'}">${(100-a.err).toFixed(1)}%</span></td>
+      <td class="mono">${a.p50}ms</td>
+      <td class="mono">${a.p95}ms</td>
+      <td class="mono">${a.p99}ms</td>
+      <td><span class="status-pill ${a.status==='up'?'pill-green':a.status==='warn'?'pill-amber':'pill-red'}">${a.status==='up'?'● Healthy':a.status==='warn'?'▲ Warning':'✕ Down'}</span></td>
+    </tr>`).join('');
+}
+
+// ==================== TENANTS PAGE ====================
+function renderTenantCards() {
+  const el = document.getElementById('tenantCards');
+  if(!el) return;
+  el.innerHTML = TENANTS.map(t=>`
+    <div class="tenant-card ${t.color}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="tenant-name">${t.name}</div>
+          <div class="tenant-domain">${t.domain}</div>
+        </div>
+        <span class="status-pill pill-green">● Active</span>
+      </div>
+      <div class="grid g3" style="margin:12px 0">
+        <div><div class="mini-val" style="font-size:20px;color:var(--accent)">${t.apis}</div><div class="mini-label">APIs</div></div>
+        <div><div class="mini-val" style="font-size:20px;color:var(--green)">${t.subs}</div><div class="mini-label">Subscriptions</div></div>
+        <div class="mini-val" style="font-size:20px;color:var(--purple)">--</div><div class="mini-label">Calls / 24h</div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Admin: <span style="color:var(--text2)">${t.admin}</span></div>
+      <div style="display:flex;gap:6px">
+        <a href="${t.devPortal}" target="_blank" class="btn btn-ghost btn-sm">Dev Portal ↗</a>
+        <button class="btn btn-primary btn-sm" onclick="openModal('newTenantModal')">+ Add User</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderTenantTable() {
+  const el = document.getElementById('tenantTableBody');
+  if(!el) return;
+  el.innerHTML = TENANTS.map(t=>`
+    <tr>
+      <td class="mono">${t.domain}</td>
+      <td>${t.admin}</td>
+      <td class="mono">${t.apis}</td>
+      <td class="mono">${t.subs}</td>
+      <td class="mono">${t.calls.toLocaleString()}</td>
+      <td><span class="status-pill pill-green">● Active</span></td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm btn-icon" title="View APIs" onclick="alert('Filtering to ${t.domain}')">🔍</button>
+          <a href="${t.devPortal}" target="_blank" class="btn btn-primary btn-sm">Portal ↗</a>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+// ==================== API REGISTRY PAGE ====================
+
+function loadRealAPIs() {
+  fetch(`${API_BASE}/apis`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.list || !data.list.length) return;
+      // Merge real WSO2 APIs into APIS array
+      data.list.forEach(api => {
+        const existing = APIS.find(a => a.name === api.name);
+        if (!existing) {
+          APIS.push({
+            name: api.name,
+            version: api.version,
+            tenant: api.tenant,
+            context: api.context,
+            backend: '',
+            auth: 'OAuth2',
+            tier: 'Unlimited',
+            status: api.lifeCycleStatus === 'PUBLISHED' ? 'up' : 'warn',
+            calls: 0, p50: 0, p95: 0, p99: 0, err: 0,
+            endpoints: [], scopes: []
+          });
+        } else {
+          // Update status from real WSO2 data
+          existing.status = api.lifeCycleStatus === 'PUBLISHED' ? 'up' : 'warn';
+        }
+      });
+      renderApiRegistry();
+      renderApiHealthGrid();
+      console.log('Loaded', data.count, 'real APIs from WSO2');
+    })
+    .catch(e => console.log('API load error:', e));
+}
+
+function renderApiRegistry() {
+  const el = document.getElementById('apiRegistryBody');
+  if(!el) return;
+  el.innerHTML = APIS.map(a=>`
+    <tr>
+      <td><strong>${a.name}</strong></td>
+      <td class="mono">${a.version}</td>
+      <td><span class="tenant-badge ${a.tenant.includes('finance')?'finance':'logistics'}-badge">${a.tenant}</span></td>
+      <td class="mono">${a.endpoints.length}</td>
+      <td><span class="status-pill pill-blue">${a.auth}</span></td>
+      <td><span class="status-pill pill-amber">${a.tier}</span></td>
+      <td><span class="status-pill ${a.status==='up'?'pill-green':a.status==='warn'?'pill-amber':'pill-red'}">${a.status==='up'?'Published':a.status==='warn'?'Degraded':'Down'}</span></td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-ghost btn-sm" onclick="openApiDetail('${a.name}')">Detail</button>
+          <button class="btn btn-primary btn-sm" onclick="showPage('tester',null)">Test</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function filterApis(q) {
+  const rows = document.querySelectorAll('#apiRegistryBody tr');
+  rows.forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(q.toLowerCase())?'':'none'});
+}
+function filterApisByTenant(t) {
+  const rows = document.querySelectorAll('#apiRegistryBody tr');
+  rows.forEach(r=>{r.style.display=!t||r.textContent.includes(t)?'':'none'});
+}
+
+// ==================== API DETAIL MODAL ====================
+function openApiDetail(name) {
+  const a = APIS.find(x=>x.name===name);
+  if(!a) return;
+  document.getElementById('apiDetailTitle').textContent = `${a.name} v${a.version}`;
+  document.getElementById('apiDetailBody').innerHTML = `
+    <div class="grid g3" style="margin-bottom:16px">
+      <div class="mini-card"><div class="mini-val" style="color:var(--accent)">${a.calls.toLocaleString()}</div><div class="mini-label">Calls / Hour</div></div>
+      <div class="mini-card"><div class="mini-val" style="color:${a.err>1?'var(--red)':'var(--green)'}">${a.err}%</div><div class="mini-label">Error Rate</div></div>
+      <div class="mini-card"><div class="mini-val" style="color:var(--amber)">${a.p95}ms</div><div class="mini-label">P95 Latency</div></div>
+    </div>
+    <div class="form-row" style="margin-bottom:14px">
+      <div>
+        <div class="form-label">Gateway URL</div>
+        <div class="gw-url"><div class="gw-url-text">https://localhost:8243/t/${a.tenant}${a.context}/${a.version}/</div></div>
+      </div>
+      <div>
+        <div class="form-label">Backend Endpoint</div>
+        <div class="gw-url"><div class="gw-url-text">${a.backend}</div></div>
+      </div>
+    </div>
+    <div class="form-label" style="margin-bottom:8px">OAuth2 Scopes</div>
+    <div style="margin-bottom:14px">${a.scopes.map(s=>`<span class="scope">${s}</span>`).join('')}</div>
+    <div class="form-label" style="margin-bottom:8px">Resources / Endpoints</div>
+    ${a.endpoints.map(e=>`
+      <div class="endpoint-row">
+        <span class="method-tag m-${e.m.toLowerCase()}">${e.m}</span>
+        <span class="endpoint-path">${e.p}</span>
+        <span class="endpoint-desc">${e.d}</span>
+      </div>`).join('')}`;
+  openModal('apiDetailModal');
+}
+
+// ==================== PUBLISH WIZARD ====================
+function changeStep(dir) {
+  const max = 4;
+  const newStep = currentPublishStep + dir;
+  if(newStep < 1 || newStep > max) {
+    if(newStep > max) publishAPI();
+    return;
+  }
+  document.getElementById('spanel'+currentPublishStep).classList.remove('active');
+  document.getElementById('pstep'+currentPublishStep).classList.remove('active');
+  currentPublishStep = newStep;
+  document.getElementById('spanel'+currentPublishStep).classList.add('active');
+  document.getElementById('pstep'+currentPublishStep).classList.add('active');
+  for(let i=1;i<currentPublishStep;i++){
+    document.getElementById('pstep'+i).classList.add('done');
+    if(i<4) document.getElementById('pline'+i).classList.add('done');
+  }
+  document.getElementById('prevStepBtn').style.visibility = currentPublishStep===1?'hidden':'visible';
+  document.getElementById('nextStepBtn').textContent = currentPublishStep===4?'🚀 Publish API':'Next →';
+  if(currentPublishStep===4) generateReview();
+  // Scope preview
+  if(currentPublishStep===3) {
+    document.getElementById('api_scopes').addEventListener('input',updateScopePreview);
+  }
+}
+
+function updatePreview() {
+  const name = document.getElementById('api_name').value || 'apiname';
+  const ver = document.getElementById('api_version').value || '1.0';
+  const ctx = document.getElementById('api_context').value || '/resource';
+  const tenant = document.getElementById('api_tenant').value;
+  const url = `https://localhost:8243/t/${tenant}${ctx}/${ver}/`;
+  document.getElementById('gwUrlPreview').textContent = url;
+}
+
+function updateScopePreview() {
+  const scopes = document.getElementById('api_scopes').value.split(',').map(s=>s.trim()).filter(Boolean);
+  document.getElementById('scopePreview').innerHTML = scopes.map(s=>`<span class="scope">${s}</span>`).join('');
+}
+
+function handleTagInput(e) {
+  if(e.key==='Enter' || e.key===',') {
+    e.preventDefault();
+    const v = document.getElementById('tagInput').value.trim().replace(',','');
+    if(v && !publishTags.includes(v)) {
+      publishTags.push(v);
+      const chip = document.createElement('div');
+      chip.className='tag-chip';
+      chip.innerHTML = `${v}<span class="tag-chip-x" onclick="removeTag('${v}',this.parentElement)">×</span>`;
+      document.getElementById('tagInputWrap').insertBefore(chip, document.getElementById('tagInput'));
+    }
+    document.getElementById('tagInput').value='';
+  }
+}
+function removeTag(t, el) { publishTags=publishTags.filter(x=>x!==t); el.remove(); }
+
+function addEndpointRow() {
+  const row = document.createElement('div');
+  row.className='endpoint-row';
+  row.innerHTML=`
+    <select class="form-select" style="width:90px;padding:6px 8px"><option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>PATCH</option></select>
+    <input class="form-input" placeholder="/resource/{id}" style="flex:1">
+    <input class="form-input" placeholder="Description" style="flex:1">
+    <button class="btn btn-danger btn-icon btn-sm" onclick="this.closest('.endpoint-row').remove()">✕</button>`;
+  document.getElementById('endpointRows').appendChild(row);
+}
+
+function generateReview() {
+  const name = document.getElementById('api_name').value || 'MyAPI';
+  const ver = document.getElementById('api_version').value || '1.0';
+  const ctx = document.getElementById('api_context').value || '/resource';
+  const tenant = document.getElementById('api_tenant').value;
+  const backend = document.getElementById('api_backend').value || 'http://localhost:3001';
+  const auth = document.getElementById('api_auth').value;
+  const tier = document.getElementById('api_tier').value;
+  const scopes = document.getElementById('api_scopes').value;
+
+  document.getElementById('reviewContent').innerHTML = `
+    <div class="info-box" style="margin-bottom:12px">
+      Ready to publish <strong>${name} v${ver}</strong> to <strong>${tenant}</strong> gateway
+    </div>
+    <div class="grid g2" style="margin-bottom:12px">
+      <div><div class="form-label">API Name</div><div class="mono" style="color:var(--accent);font-size:13px">${name}</div></div>
+      <div><div class="form-label">Version</div><div class="mono" style="color:var(--accent);font-size:13px">${ver}</div></div>
+      <div><div class="form-label">Tenant</div><div class="mono" style="color:var(--accent);font-size:13px">${tenant}</div></div>
+      <div><div class="form-label">Context</div><div class="mono" style="color:var(--accent);font-size:13px">${ctx}</div></div>
+      <div><div class="form-label">Auth</div><div class="mono" style="color:var(--green);font-size:13px">${auth}</div></div>
+      <div><div class="form-label">Throttle Tier</div><div class="mono" style="color:var(--amber);font-size:13px">${tier}</div></div>
+    </div>
+    <div class="form-label" style="margin-bottom:4px">Gateway URL</div>
+    <div class="gw-url" style="margin-bottom:12px"><div class="gw-url-text">https://localhost:8243/t/${tenant}${ctx}/${ver}/</div></div>`;
+
+  const yaml = `openapi: "3.0.3"
+info:
+  title: "${name}"
+  description: "API published via WSO2 Control Plane"
+  version: "${ver}"
+  contact:
+    name: "API Team"
+    email: "api@quadgen.com"
+  x-tmf-id: "${name.toUpperCase()}-001"
+  x-tmf-version: "${ver}"
+x-wso2-basePath: "/${name.toLowerCase()}/${ver}"
+x-wso2-production-endpoints:
+  urls:
+    - "${backend}"
+security:
+  - OAuth2: [${scopes||'read:resource'}]
+paths:
+  /${name.toLowerCase()}:
+    get:
+      summary: "List all ${name.toLowerCase()} resources"
+      operationId: "list${name}"
+      tags: ["${name}"]
+      security:
+        - OAuth2: [${scopes.split(',')[0]||'read:resource'}]
+      responses:
+        "200":
+          description: "Success"
+        "401":
+          description: "Unauthorized"
+        "403":
+          description: "Forbidden"`;
+  document.getElementById('yamlPreview').textContent = yaml;
+}
+
+async function publishAPI() {
+  const name    = document.getElementById('api_name').value;
+  const version = document.getElementById('api_version').value || '1.0';
+  const context = document.getElementById('api_context').value;
+  const tenant  = document.getElementById('api_tenant').value;
+  const backend = document.getElementById('api_backend').value;
+  const tier    = document.getElementById('api_tier').value;
+
+  if (!name || !context || !backend) {
+    showToast('Fill in API Name, Context and Backend URL first', 'amber');
+    return;
+  }
+
+  const payload = {
+    name, version, context,
+    endpointConfig: {
+      endpoint_type: 'http',
+      production_endpoints: { url: backend }
+    },
+    gatewayEnvironments: ['Default'],
+    policies: [tier],
+    visibility: 'PUBLIC',
+    transport: ['http', 'https']
+  };
+
+  document.getElementById('reviewContent').innerHTML = `<div class="terminal" id="publishLog" style="height:220px"></div>`;
+  document.getElementById('nextStepBtn').disabled = true;
+
+  const log = (msg, cls='t-info') => {
+    const el = document.getElementById('publishLog');
+    const line = document.createElement('div');
+    line.className = 'terminal-line';
+    line.innerHTML = `<span class="t-time">${new Date().toLocaleTimeString()} </span><span class="${cls}">${msg}</span>`;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  };
+
+  log(`[INFO] Validating spec for ${name} v${version}...`);
+  log(`[INFO] Calling WSO2 Publisher API...`);
+
+  try {
+    // First call - create API
+    const res = await fetch(`${API_BASE}/apis`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payload, tenant })  // add tenant here
+    });
+    const created = await res.json();
+    
+    if (created.id) {
+      log(`[INFO] API created — ID: ${created.id}`);
+      log(`[INFO] Publishing to gateway...`);
+      // Second call - publish with tenant
+      await fetch(`${API_BASE}/apis/${created.id}/publish?tenant=${tenant}`, { method: 'POST' });
+      log(`[SUCCESS] ${name} v${version} published to https://localhost:8243/t/${tenant}${context}/${version}/`, 't-ok');
+      APIS.push({ name, version, tenant, context, backend, auth: 'OAuth2', tier, status: 'up', calls: 0, p50: 0, p95: 0, p99: 0, err: 0, endpoints: [], scopes: [] });
+      renderApiHealthGrid();
+      renderApiRegistry();
+      document.getElementById('nextStepBtn').textContent = '✓ Done';
+      document.getElementById('nextStepBtn').disabled = false;
+      document.getElementById('nextStepBtn').onclick = () => { resetPublishWizard(); showPage('apis', null); };
+      showToast(`${name} published to WSO2 ✓`, 'green');
+    } else {
+      log(`[ERROR] ${JSON.stringify(created)}`, 't-err');
+      showToast('Publish failed — check terminal log', 'red');
+      document.getElementById('nextStepBtn').disabled = false;
+    }
+  } catch (e) {
+    log(`[ERROR] ${e.message}`, 't-err');
+    showToast('Server unreachable — is dashboard-server running?', 'red');
+    document.getElementById('nextStepBtn').disabled = false;
+  }
+}
+
+function resetPublishWizard() {
+  currentPublishStep=1;
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('spanel1').classList.add('active');
+  document.querySelectorAll('#publishStepper .step').forEach(s=>{s.classList.remove('active','done')});
+  document.getElementById('pstep1').classList.add('active');
+  document.querySelectorAll('.step-line').forEach(l=>l.classList.remove('done'));
+  document.getElementById('prevStepBtn').style.visibility='hidden';
+  document.getElementById('nextStepBtn').textContent='Next →';
+  document.getElementById('nextStepBtn').onclick=()=>changeStep(1);
+  publishTags=[];
+}
+
+// ==================== TENANT WIZARD ====================
+function changeTenantStep(dir) {
+  const max = 4;
+  const newStep = currentTenantStep + dir;
+  if(newStep<1||newStep>max) {
+    if(newStep>max) provisionTenant();
+    return;
+  }
+  document.getElementById('tspanel'+currentTenantStep).classList.remove('active');
+  document.getElementById('tstep'+currentTenantStep).classList.remove('active');
+  currentTenantStep = newStep;
+  document.getElementById('tspanel'+currentTenantStep).classList.add('active');
+  document.getElementById('tstep'+currentTenantStep).classList.add('active');
+  for(let i=1;i<currentTenantStep;i++){
+    document.getElementById('tstep'+i).classList.add('done');
+    if(i<4) document.getElementById('tline'+i).classList.add('done');
+  }
+  document.getElementById('tPrevBtn').style.visibility = currentTenantStep===1?'hidden':'visible';
+  document.getElementById('tNextBtn').textContent = currentTenantStep===4?'⚡ Provision Tenant':'Next →';
+  if(currentTenantStep===4) generateTenantCommands();
+}
+
+function updateTenantPreview() {
+  const d = document.getElementById('t_domain').value || '';
+  document.getElementById('tenantPortalUrl').textContent = 'https://localhost:9443/devportal?tenant=' + d;
+}
+
+function generateTenantCommands() {
+  const domain = document.getElementById('t_domain').value || 'newtenant.com';
+  const admin = document.getElementById('t_adminuser').value || 'newadmin';
+  const cmds = [
+    `# Step 1: Create tenant via WSO2 Tenant Management API`,
+    `curl -k -X POST "https://localhost:9443/api/v1/tenants" \\`,
+    `  -H "Authorization: Basic YWRtaW46YWRtaW4=" \\`,
+    `  -H "Content-Type: application/json" \\`,
+    `  -d '{"domain":"${domain}","adminUser":{"username":"${admin}@${domain}"}}'`,
+    ``,
+    `# Step 2: Create roles via SCIM 2.0`,
+    `curl -k -X POST "https://localhost:9443/scim2/Groups" \\`,
+    `  -H "Authorization: Basic YWRtaW46YWRtaW4=" \\`,
+    `  -d '{"displayName":"TenantPublisher","members":[]}'`,
+    ``,
+    `# Step 3: Assign roles to users`,
+    `curl -k -X PATCH "https://localhost:9443/scim2/Groups/{groupId}" \\`,
+    `  -d '{"Operations":[{"op":"add","path":"members","value":[{"display":"${admin}@${domain}"}]}]}'`,
+    ``,
+    `# Step 4: Verify tenant dev portal`,
+    `curl -k "https://localhost:9443/devportal?tenant=${domain}"`,
+  ];
+  document.getElementById('tenantCmds').innerHTML = `<div class="cmd-preview" style="white-space:pre-wrap;line-height:1.8">${cmds.join('\n')}</div>`;
+}
+
+async function provisionTenant() {
+  const domain  = document.getElementById('t_domain').value;
+  const orgname = document.getElementById('t_orgname').value;
+  const admin   = document.getElementById('t_adminuser').value;
+  const pwd     = document.getElementById('t_adminpwd').value;
+
+  if (!domain || !admin || !pwd) {
+    showToast('Fill in domain, admin username and password first', 'amber');
+    return;
+  }
+
+  const payload = {
+    domain,
+    adminUser: {
+      username: admin,
+      password: pwd,
+      firstname: orgname,
+      lastname: 'Admin',
+      email: `${admin}@${domain}`
+    }
+  };
+
+  document.getElementById('tNextBtn').disabled = true;
+
+  const log = (msg, cls='t-info') => {
+    const el = document.getElementById('tenantProvisionLog');
+    const line = document.createElement('div');
+    line.className = 'terminal-line';
+    line.innerHTML = `<span class="t-time">${new Date().toLocaleTimeString()} </span><span class="${cls}">${msg}</span>`;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  };
+
+  log(`[INFO] Calling WSO2 Tenant Management API...`);
+  log(`[INFO] Creating tenant domain: ${domain}`);
+
+  try {
+    const res = await fetch(`${API_BASE}/tenants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+
+    if (result.domain) {
+      log(`[INFO] Tenant created — domain: ${result.domain}`, 't-info');
+      log(`[INFO] Dev Portal: https://localhost:9443/devportal?tenant=${domain}`);
+      log(`[SUCCESS] ${domain} provisioned successfully!`, 't-ok');
+      TENANTS.push({ domain, name: orgname, admin: `${admin}@${domain}`, apis: 0, subs: 0, calls: 0, status: 'active', color: 'finance', devPortal: `https://localhost:9443/devportal?tenant=${domain}`, users: [] });
+      renderTenantCards();
+      renderTenantTable();
+      document.getElementById('tenantProvisionActions').style.display = 'block';
+      document.getElementById('newTenantPortalLink').textContent = `https://localhost:9443/devportal?tenant=${domain}`;
+      document.getElementById('tNextBtn').textContent = '✓ Done';
+      document.getElementById('tNextBtn').disabled = false;
+      document.getElementById('tNextBtn').onclick = () => { closeModal('newTenantModal'); currentTenantStep = 1; };
+      showToast(`Tenant ${domain} created ✓`, 'green');
+    } else {
+      log(`[ERROR] ${JSON.stringify(result)}`, 't-err');
+      showToast('Tenant creation failed — check terminal log', 'red');
+      document.getElementById('tNextBtn').disabled = false;
+    }
+  } catch (e) {
+    log(`[ERROR] ${e.message}`, 't-err');
+    showToast('Server unreachable — is dashboard-server running?', 'red');
+    document.getElementById('tNextBtn').disabled = false;
+  }
+}
+
+// ==================== SUBSCRIPTIONS ====================
+function renderSubscriptions() {
+  const el = document.getElementById('subscriptionsBody');
+  if(!el) return;
+  el.innerHTML = SUBS.map(s=>`
+    <tr>
+      <td><strong>${s.app}</strong></td>
+      <td>${s.api}</td>
+      <td><span class="tenant-badge ${s.tenant.includes('finance')?'finance':'logistics'}-badge">${s.tenant}</span></td>
+      <td><span class="status-pill pill-amber">${s.tier}</span></td>
+      <td><span class="status-pill ${s.status==='active'?'pill-green':'pill-red'}">${s.status}</span></td>
+      <td class="mono" style="font-size:11px">${s.created}</td>
+      <td><button class="btn btn-ghost btn-sm">Revoke</button></td>
+    </tr>`).join('');
+}
+
+function addSubscription() {
+  closeModal('newSubModal');
+  showToast('Subscription created successfully','green');
+}
+
+// ==================== THROTTLE ====================
+function renderThrottleTiers() {
+  const el = document.getElementById('throttleTiersBody');
+  if(!el) return;
+  el.innerHTML = THROTTLE_TIERS.map(t=>`
+    <tr>
+      <td><strong>${t.name}</strong></td>
+      <td class="mono">${t.limit}</td>
+      <td class="mono">${t.unit}</td>
+      <td><span class="status-pill pill-red">${t.overage}</span></td>
+    </tr>`).join('');
+}
+
+function renderDenyRules() {
+  const el = document.getElementById('denyRulesBody');
+  if(!el) return;
+  el.innerHTML = DENY_RULES.map((r,i)=>`
+    <tr>
+      <td>${r.type}</td>
+      <td class="mono">${r.value}</td>
+      <td>${r.api}</td>
+      <td class="mono" style="font-size:11px">${r.expires}</td>
+      <td><span class="status-pill ${r.status==='active'?'pill-red':'pill-amber'}">${r.status}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="DENY_RULES.splice(${i},1);renderDenyRules()">Remove</button></td>
+    </tr>`).join('');
+}
+
+function addThrottlePolicy() {
+  closeModal('newThrottleModal');
+  showToast('Throttle policy created','green');
+}
+
+function addDenyRule() {
+  closeModal('denyRuleModal');
+  DENY_RULES.unshift({type:'IP Address',value:'192.168.x.x',api:'All APIs',expires:'2026-06-01',status:'active'});
+  renderDenyRules();
+  showToast('Deny rule added','amber');
+}
+
+// ==================== API TESTER ====================
+const TEST_APIS = {
+  invoice:{base:'https://localhost:8243/t/finance.com/invoices/1.0',endpoints:['/invoices','/invoices/INV-001','/invoices/INV-002']},
+  payment:{base:'https://localhost:8243/t/finance.com/paymentapi/1.0',endpoints:['/payments','/payments/PAY-001']},
+  shipment:{base:'https://localhost:8243/t/logistics.com/shipmentapi/1.0',endpoints:['/shipments','/shipments/SH-118']},
+  route:{base:'https://localhost:8243/t/logistics.com/routeapi/1.0',endpoints:['/routes','/routes/RT-042']},
+};
+
+const MOCK_RESPONSES = {
+  '/invoices':{status:200,body:[{id:'INV-001',amount:1250.00,status:'paid',dueDate:'2026-04-30',vendor:'Acme Corp'},{id:'INV-002',amount:850.00,status:'pending',dueDate:'2026-05-15',vendor:'TechSupply'}]},
+  '/invoices/INV-001':{status:200,body:{id:'INV-001',amount:1250.00,status:'paid',vendor:'Acme Corp',lineItems:[{desc:'Network Equipment',qty:2,price:625.00}]}},
+  '/payments':{status:200,body:[{id:'PAY-001',amount:1250.00,status:'completed',method:'bank_transfer'},{id:'PAY-002',amount:850.00,status:'pending'}]},
+  '/shipments':{status:200,body:[{id:'SH-118',origin:'Mumbai',destination:'Delhi',status:'in_transit',eta:'2026-04-28'},{id:'SH-119',origin:'Chennai',destination:'Hyderabad',status:'delivered'}]},
+  '/routes':{status:200,body:[{id:'RT-042',from:'Delhi Hub',to:'Jaipur',distance:'280km',vehicleType:'truck'},{id:'RT-043',from:'Mumbai',to:'Pune',distance:'150km'}]},
+};
+
+function updateTestEndpoints() {
+  const sel = document.getElementById('test_api').value;
+  const api = TEST_APIS[sel];
+  const endpointSel = document.getElementById('test_endpoint');
+  endpointSel.innerHTML = api.endpoints.map(e=>`<option value="${e}">${e}</option>`).join('');
+  updateTestUrl();
+}
+
+function updateTestUrl() {
+  const sel = document.getElementById('test_api').value;
+  const api = TEST_APIS[sel];
+  const ep = document.getElementById('test_endpoint').value;
+  const method = document.getElementById('test_method').value;
+  const url = api.base + (ep||api.endpoints[0]);
+  document.getElementById('testUrlPreview').innerHTML = `<div class="gw-url-text">${url}</div>`;
+  document.getElementById('curlCmd').innerHTML = `curl -k -X ${method} "${url}" \\
+  -H "Authorization: Bearer ${testToken||'&lt;token&gt;'}" \\
+  -H "Content-Type: application/json"<button class="copy-btn cmd-copy" onclick="copyText('${url}')">📋 Copy</button>`;
+}
+
+function updateTestTenant() {
+  updateTestUrl();
+}
+
+async function generateToken() {
+  const tenant = document.getElementById('test_tenant').value;
+  const scope  = document.getElementById('test_scope').value;
+
+  const creds = tenant === 'finance'
+    ? { clientId: 'y0m_BwegSfeqfXcDXX3zi22QvWIa', clientSecret: '011B0fWLqGkSq2umtnqdUzz_E6Ua' }
+    : { clientId: 'FtvgUMmX5pEwsTRSB3ehue2_Meoa', clientSecret: 'Cf1yfb23tAgHgGWrn7R8z0rtn5ca' };
+
+  document.getElementById('tokenResult').innerHTML = `<div style="font-size:11px;color:var(--text3);padding:8px 0">Requesting token from WSO2...</div>`;
+
+  try {
+    const res = await fetch(`${API_BASE}/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...creds, scope })
+    });
+    const data = await res.json();
+
+    if (data.access_token) {
+      testToken = data.access_token;
+      document.getElementById('tokenResult').innerHTML = `
+        <div class="form-label" style="margin-top:10px">Access Token (Real)</div>
+        <div class="token-box">${data.access_token}</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <span class="status-pill pill-green">● Valid</span>
+          <span class="mono" style="font-size:10px;color:var(--text3)">Expires in ${data.expires_in}s</span>
+          <span class="mono" style="font-size:10px;color:var(--text3)">${data.token_type}</span>
+        </div>`;
+      updateTestUrl();
+      showToast('Real OAuth2 token generated ✓', 'green');
+    } else {
+      document.getElementById('tokenResult').innerHTML = `<div style="font-size:11px;color:var(--red);padding:8px 0">Error: ${data.error_description || data.error}</div>`;
+      showToast('Token error — check client credentials', 'red');
+    }
+  } catch (e) {
+    document.getElementById('tokenResult').innerHTML = `<div style="font-size:11px;color:var(--red);padding:8px 0">Server unreachable: ${e.message}</div>`;
+    showToast('dashboard-server not running on :5000', 'red');
+  }
+}
+
+function executeTest() {
+  if(!testToken){showToast('Generate a token first','amber');return;}
+  const sel = document.getElementById('test_api').value;
+  const ep = document.getElementById('test_endpoint').value;
+  const method = document.getElementById('test_method').value;
+  const api = TEST_APIS[sel];
+  const url = api.base + (ep||api.endpoints[0]);
+  const mock = MOCK_RESPONSES[ep] || {status:200,body:{message:'OK',data:[]}};
+  const start = Date.now();
+
+  document.getElementById('testResponse').textContent = '// Sending request...';
+  document.getElementById('testStatusBar').innerHTML = '';
+
+  setTimeout(()=>{
+    const latency = Math.round(50+Math.random()*150);
+    const resp = JSON.stringify(mock.body, null, 2);
+    document.getElementById('testResponse').textContent = resp;
+    document.getElementById('testResponse').className = 'response-box ' + (mock.status>=400?'error':'');
+    document.getElementById('testStatusBar').innerHTML = `
+      <div style="display:flex;gap:10px;align-items:center">
+        <span class="status-pill ${mock.status<300?'pill-green':mock.status<400?'pill-amber':'pill-red'}">${mock.status} ${mock.status===200?'OK':mock.status===201?'Created':'Error'}</span>
+        <span class="mono" style="font-size:11px;color:var(--text3)">${latency}ms</span>
+        <span class="mono" style="font-size:11px;color:var(--text3)">${resp.length} bytes</span>
+      </div>`;
+    // Add to history
+    testHistory.unshift({method,url,status:mock.status,latency,time:new Date().toLocaleTimeString()});
+    const hist = document.getElementById('testHistory');
+    hist.innerHTML = testHistory.slice(0,8).map(h=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:11px">
+        <span class="method-tag m-${h.method.toLowerCase()}" style="font-size:10px;padding:2px 6px">${h.method}</span>
+        <span style="color:var(--text3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.url}</span>
+        <span class="status-pill ${h.status<300?'pill-green':'pill-red'}" style="font-size:10px">${h.status}</span>
+        <span class="mono" style="color:var(--text3)">${h.latency}ms</span>
+      </div>`).join('');
+  }, 400+Math.random()*600);
+}
+
+document.getElementById('test_endpoint').addEventListener('change', updateTestUrl);
+document.getElementById('test_method').addEventListener('change', updateTestUrl);
+
+// ==================== LIVE LOGS ====================
+let logInterval;
+const LOG_TEMPLATES = [
+  ()=>({level:'INFO',msg:`[${pickApi()}] ${pickMethod()} ${pickPath()} → 200 OK (${randMs()}ms) — ${pickApp()}`}),
+  ()=>({level:'INFO',msg:`[InvoiceAPI] Token validated — sub: alice@finance.com scope: read:invoices`}),
+  ()=>({level:'WARN',msg:`[ShipmentAPI] Response time ${200+Math.round(Math.random()*300)}ms exceeds SLA threshold (200ms)`}),
+  ()=>({level:'ERROR',msg:`[PaymentAPI] Error 900910: Missing scope write:payments for bob@finance.com`}),
+  ()=>({level:'INFO',msg:`[RouteAPI] Cache hit for GET /routes/RT-042 — saved ${randMs()}ms`}),
+  ()=>({level:'WARN',msg:`[ShipmentAPI] Throttle: LogisticsApp exceeded Gold tier (10k/min)`}),
+  ()=>({level:'ERROR',msg:`[InvoiceAPI] Error 900901: Token expired at ${new Date().toLocaleTimeString()}`}),
+  ()=>({level:'INFO',msg:`[GATEWAY] Token issued to FinanceApp — client_credentials grant`}),
+];
+function pickApi(){return['InvoiceAPI','PaymentAPI','ShipmentAPI','RouteAPI'][Math.floor(Math.random()*4)]}
+function pickMethod(){return['GET','POST','PUT','DELETE'][Math.floor(Math.random()*4)]}
+function pickPath(){return['/invoices/INV-001','/payments','/shipments/SH-118','/routes','/invoices'][Math.floor(Math.random()*5)]}
+function pickApp(){return['FinanceApp','LogisticsApp','FinanceDevApp'][Math.floor(Math.random()*3)]}
+function randMs(){return Math.round(40+Math.random()*250)}
+
+function startLiveLogs() {
+  // Load last 100 real WSO2 log lines
+  fetch(`${API_BASE}/logs/recent`)
+    .then(r => r.json())
+    .then(lines => {
+      lines.slice(-50).forEach(l => appendLog(l.level, l.line));
+    })
+    .catch(() => console.log('Recent logs unavailable'));
+
+  // Connect to real SSE stream
+  const evtSource = new EventSource(`${API_BASE}/logs/stream`);
+
+  evtSource.onmessage = (e) => {
+    if (!liveLogsOn) return;
+    const data = JSON.parse(e.data);
+    appendLog(data.level, data.line);
+    logCounts[data.level] = (logCounts[data.level] || 0) + 1;
+    document.getElementById('logCountInfo').textContent = logCounts.INFO || 0;
+    document.getElementById('logCountWarn').textContent = logCounts.WARN || 0;
+    document.getElementById('logCountErr').textContent = logCounts.ERROR || 0;
+  };
+
+  evtSource.onerror = () => {
+    // Fallback to simulated if SSE unavailable
+    console.log('SSE unavailable — falling back to simulated logs');
+    setInterval(() => {
+      if (!liveLogsOn) return;
+      const tpl = LOG_TEMPLATES[Math.floor(Math.random() * LOG_TEMPLATES.length)]();
+      appendLog(tpl.level, tpl.msg);
+      logCounts[tpl.level] = (logCounts[tpl.level] || 0) + 1;
+      document.getElementById('logCountInfo').textContent = logCounts.INFO || 0;
+      document.getElementById('logCountWarn').textContent = logCounts.WARN || 0;
+      document.getElementById('logCountErr').textContent = logCounts.ERROR || 0;
+    }, 1200);
+  };
+}
+
+function appendLog(level, msg) {
+  const el = document.getElementById('logTerminal');
+  if(!el) return;
+  if(logFilter!=='all' && level!==logFilter) return;
+  const line = document.createElement('div');
+  line.className='terminal-line';
+  line.dataset.level=level;
+  const cls = level==='ERROR'?'t-err':level==='WARN'?'t-warn':'t-info';
+  const lvlLabel = level==='ERROR'?'ERR ':level==='WARN'?'WARN':'INFO';
+  line.innerHTML=`<span class="t-time">${new Date().toLocaleTimeString()} </span><span class="${cls}">[${lvlLabel}] ${msg}</span>`;
+  el.appendChild(line);
+  if(el.children.length>200) el.removeChild(el.firstChild);
+  el.scrollTop=el.scrollHeight;
+}
+
+function filterLogs(level, el) {
+  logFilter = level;
+  document.querySelectorAll('.log-chip').forEach(c=>c.style.opacity='0.5');
+  el.style.opacity='1';
+}
+function clearLogs() { document.getElementById('logTerminal').innerHTML=''; logCounts={INFO:0,WARN:0,ERROR:0}; }
+function toggleLiveLogs() {
+  liveLogsOn=!liveLogsOn;
+  const t=document.getElementById('logToggle');
+  t.classList.toggle('on',liveLogsOn);
+}
+
+// ==================== PIPELINE PAGE ====================
+let pipelinePolling = null;
+
+function startPipelinePolling() {
+  // Stop any existing polling
+  if (pipelinePolling) clearInterval(pipelinePolling);
+
+  // Poll every 10 seconds
+  pipelinePolling = setInterval(() => {
+    renderPipelineJobs();
+    renderPipelineHistory();
+  }, 10000);
+}
+
+function stopPipelinePolling() {
+  if (pipelinePolling) {
+    clearInterval(pipelinePolling);
+    pipelinePolling = null;
+  }
+}
+
+function renderPipelineJobs() {
+  fetch(`${API_BASE}/pipeline/jobs`)
+    .then(r => r.json())
+    .then(data => {
+      const el = document.getElementById('pipelineJobs');
+      if (!el) return;
+      if (!data.jobs || !data.jobs.length) {
+        el.innerHTML = '<div class="empty-state"><div class="empty-state-text">No job data available</div></div>';
+        return;
+      }
+      el.innerHTML = data.jobs.map(j => {
+        const icon = j.conclusion === 'success' ? '✅' : j.conclusion === 'failure' ? '❌' : j.status === 'in_progress' ? '⏳' : '⏸';
+        const color = j.conclusion === 'success' ? 'green' : j.conclusion === 'failure' ? 'red' : 'amber';
+        const dur = j.duration ? `${Math.floor(j.duration/60)}m ${j.duration%60}s` : '--';
+        return `<div class="pipeline-job">
+          <div class="job-icon">${icon}</div>
+          <div class="job-name">${j.name}</div>
+          <div class="job-time">${dur}</div>
+          <div class="job-status" style="color:var(--${color})">● ${j.conclusion || j.status}</div>
+        </div>`;
+      }).join('');
+    })
+    .catch(() => console.log('Pipeline jobs unavailable'));
+}
+
+function renderPipelineHistory() {
+  fetch(`${API_BASE}/pipeline/runs`)
+    .then(r => r.json())
+    .then(data => {
+      const el = document.getElementById('pipelineHistory');
+      if (!el || !data.runs) return;
+      el.innerHTML = data.runs.map(r => {
+        const icon = r.conclusion === 'success' ? '✓' : r.conclusion === 'failure' ? '✕' : '●';
+        const color = r.conclusion === 'success' ? 'pill-green' : r.conclusion === 'failure' ? 'pill-red' : 'pill-amber';
+        const dur = r.duration ? `${Math.floor(r.duration/60)}m ${r.duration%60}s` : '--';
+        const time = new Date(r.created_at).toLocaleTimeString('en-US',{hour12:false});
+        return `<tr>
+          <td class="mono">#${r.run_number}</td>
+          <td>${r.trigger}</td>
+          <td><span class="status-pill ${color}">${icon} ${r.conclusion||r.status}</span></td>
+          <td class="mono">${dur}</td>
+          <td class="mono" style="font-size:11px">${time}</td>
+        </tr>`;
+      }).join('');
+
+      const totalRuns = data.runs.length;
+      const passedRuns = data.runs.filter(r => r.conclusion === 'success').length;
+      const passRate = totalRuns ? Math.round((passedRuns/totalRuns)*100) : 0;
+      const lastDur = data.runs[0]?.duration || 0;
+      const durStr = lastDur ? `${Math.floor(lastDur/60)}m ${lastDur%60}s` : '--';
+
+      const cards = document.querySelectorAll('#page-pipeline .metric-val');
+      if(cards[1]) cards[1].textContent = durStr;
+      if(cards[2]) cards[2].textContent = passRate + '%';
+      if(cards[3]) cards[3].textContent = totalRuns;
+      document.getElementById('pipelineLastRefresh') && 
+        (document.getElementById('pipelineLastRefresh').textContent = 
+          `Last refreshed: ${new Date().toLocaleTimeString('en-US',{hour12:false})}`);
+    })
+    .catch(() => console.log('Pipeline history unavailable'));
+}
+
+function renderSmokeTests() {
+  fetch(`${API_BASE}/health`)
+    .then(r => r.json())
+    .then(data => {
+      const el = document.getElementById('smokeTestBody');
+      if (!el) return;
+
+      const apiUrls = {
+        'InvoiceAPI':  'https://localhost:8243/t/finance.com/invoices/1.0/',
+        'PaymentAPI':  'https://localhost:8243/t/finance.com/paymentapi/1.0/',
+        'ShipmentAPI': 'https://localhost:8243/t/logistics.com/shipmentapi/1.0/',
+        'RouteAPI':    'https://localhost:8243/t/logistics.com/routeapi/1.0/'
+      };
+
+      el.innerHTML = data.filter(b => apiUrls[b.name]).map(b => {
+        const result = b.status === 'up' ? 'PASS' : 'FAIL';
+        const resultClass = b.status === 'up' ? 'pill-green' : 'pill-red';
+        const gotStatus = b.status === 'up' ? '200' : '503';
+        const latency = b.latency || b.avgLatency || 0;
+        return `<tr>
+          <td><strong>${b.name}</strong></td>
+          <td class="mono" style="font-size:10px">${apiUrls[b.name]}</td>
+          <td class="mono">200</td>
+          <td class="mono" style="color:${b.status==='up'?'var(--green)':'var(--red)'}">${gotStatus}</td>
+          <td class="mono">${latency}ms</td>
+          <td><span class="status-pill ${resultClass}">${b.status==='up'?'✓':''} ${result}</span></td>
+        </tr>`;
+      }).join('');
+    })
+    .catch(() => console.log('Smoke tests unavailable'));
+}
+
+function triggerPipeline() {
+  showToast('Triggering pipeline...', 'amber');
+  fetch(`${API_BASE}/pipeline/trigger`, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        showToast('✓ Pipeline triggered — polling for updates every 10s', 'green');
+        // Poll aggressively for first 5 minutes
+        let fastPoll = setInterval(() => {
+          renderPipelineJobs();
+          renderPipelineHistory();
+        }, 5000);
+        setTimeout(() => {
+          clearInterval(fastPoll);
+          startPipelinePolling(); // Back to normal 10s
+        }, 300000);
+      } else {
+        showToast('Trigger failed: ' + data.message, 'red');
+      }
+    })
+    .catch(() => showToast('Could not reach GitHub API', 'red'));
+}
+
+// ==================== NOTIFICATIONS ====================
+function clearNotifications() {
+  fetch(`${API_BASE}/notifications/clear`, { method: 'POST' })
+    .then(() => {
+      document.getElementById('notifBody').innerHTML = `
+        <div class="empty-state" style="padding:24px">
+          <div class="empty-state-icon">🔔</div>
+          <div class="empty-state-text">No notifications</div>
+        </div>`;
+      const badge = document.querySelector('.notif-badge');
+      if (badge) badge.textContent = '0';
+      closeModal('notifModal');
+      showToast('Notifications cleared', 'green');
+    });
+}
+
+function renderNotifications() {
+  fetch(`${API_BASE}/notifications`)
+    .then(r => r.json())
+    .then(data => {
+      const el = document.getElementById('notifBody');
+      if (!el) return;
+
+      // Update badge
+      const badge = document.querySelector('.notif-badge');
+      if (badge) badge.textContent = data.length;
+
+      if (!data.length) {
+        el.innerHTML = `<div class="empty-state" style="padding:24px">
+          <div class="empty-state-icon">🔔</div>
+          <div class="empty-state-text">No notifications</div>
+          <div class="empty-state-sub">Real gateway events will appear here</div>
+        </div>`;
+        return;
+      }
+
+      el.innerHTML = data.map(n => `
+        <div class="event-item" style="padding:12px 0">
+          <div style="font-size:18px">${n.icon}</div>
+          <div style="flex:1">
+            <div style="font-size:11px;color:var(--${n.color});margin-bottom:3px;font-family:'Space Mono',monospace;word-break:break-all">${n.text}</div>
+            <div style="font-size:11px;color:var(--text3)">${n.time}</div>
+          </div>
+        </div>`).join('');
+    })
+    .catch(() => {});
+}
+
+// ==================== ALERTS BANNER ====================
+function renderAlertsBanner() {
+  const el = document.getElementById('alertsBanner');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="alert-banner warn">
+      <div class="alert-banner-icon">⚠️</div>
+      <div class="alert-banner-text"><strong>ShipmentAPI</strong> error rate at 1.8% — above 1% warning threshold. P99 latency at 520ms.</div>
+      <div class="alert-banner-dismiss" onclick="this.closest('.alert-banner').remove()">✕</div>
+    </div>`;
+}
+
+// ==================== TOAST ====================
+function showToast(msg, color='green') {
+  const t = document.createElement('div');
+  t.style.cssText=`position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid ${color==='green'?'rgba(0,230,118,.3)':color==='amber'?'rgba(255,171,0,.3)':'rgba(255,61,90,.3)'};color:${color==='green'?'var(--green)':color==='amber'?'var(--amber)':'var(--red)'};padding:10px 16px;border-radius:8px;font-size:12px;font-family:Barlow,sans-serif;z-index:9998;animation:fadeIn .2s ease;box-shadow:0 8px 32px rgba(0,0,0,.4)`;
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+// ==================== LIVE METRICS UPDATE ====================
+function updateLiveMetrics() {
+  fetch(`${API_BASE}/health`)
+    .then(r => r.json())
+    .then(data => {
+      // Real RPS from backends
+      const totalRPS = data.reduce((s,b) => s+(b.callsPerMin||0), 0);
+      if (totalRPS > 0) {
+        document.getElementById('tRPS').textContent = totalRPS;
+        document.getElementById('m_rps').textContent = totalRPS;
+      }
+
+      // Real error rate
+      const totalCalls = data.reduce((s,b) => s+(b.calls||0), 0);
+      const totalErrors = data.reduce((s,b) => s+(b.errors||0), 0);
+      if (totalCalls > 0) {
+        const errRate = ((totalErrors/totalCalls)*100).toFixed(2);
+        document.getElementById('tErrRate').textContent = errRate+'%';
+        document.getElementById('m_errRate').textContent = errRate+'%';
+        // Update trend text
+        const trendEl = document.getElementById('m_err_trend');
+        if(trendEl) trendEl.textContent = totalErrors > 0 ? '↑ errors detected' : '↓ all clear';
+      }
+
+      // Real P95 latency — average across all APIs
+      const avgP95 = Math.round(data.reduce((s,b) => s+(b.p95||0),0) / data.length);
+      if (avgP95 > 0) {
+        const p95El = document.getElementById('m_p95');
+        const p95TrendEl = document.getElementById('m_p95_trend');
+        if(p95El) p95El.textContent = avgP95+'ms';
+        if(p95TrendEl) p95TrendEl.textContent = `↓ real p95 across ${data.length} APIs`;
+      }
+    })
+    .catch(() => {
+      // Fallback to random if health unreachable
+      const rps = Math.round(200+Math.random()*120);
+      document.getElementById('tRPS').textContent = rps;
+      document.getElementById('m_rps').textContent = rps;
+    });
+
+  renderSparkline();
+}
+
+// ==================== PILL TOGGLE ====================
+function setPillActive(el, ctx) {
+  el.closest('.pill-toggle').querySelectorAll('.pill-opt').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  if (ctx === 'analytics') {
+    const window = el.textContent.trim();
+    updateAnalyticsForWindow(window);
+  }
+}
+
+function updateAnalyticsForWindow(window) {
+  fetch(`${API_BASE}/health`)
+    .then(r => r.json())
+    .then(data => {
+      const totalCalls = data.reduce((s,b) => s+(b.calls||0), 0);
+      const avgP50 = Math.round(data.reduce((s,b) => s+(b.p50||0),0)/data.length);
+      const avgP95 = Math.round(data.reduce((s,b) => s+(b.p95||0),0)/data.length);
+      const avgP99 = Math.round(data.reduce((s,b) => s+(b.p99||0),0)/data.length);
+
+      const cards = document.querySelectorAll('#page-analytics .metric-val');
+      const windowMultiplier = { '1H':1, '6H':6, '24H':24, '7D':168 };
+      const multiplier = windowMultiplier[window] || 1;
+      if(cards[0]) cards[0].textContent = (totalCalls * multiplier).toLocaleString();
+      if(cards[1]) cards[1].textContent = (avgP50||'--')+'ms';
+      if(cards[2]) cards[2].textContent = (avgP95||'--')+'ms';
+      if(cards[3]) cards[3].textContent = (avgP99||'--')+'ms';
+
+      if(charts['apiCallsChart']) {
+        charts['apiCallsChart'].data.datasets[0].data = data.map(b=>b.callsPerMin||0);
+        charts['apiCallsChart'].data.labels = data.map(b=>b.name);
+        charts['apiCallsChart'].update();
+      }
+
+      data.forEach(b => {
+        const api = APIS.find(a=>a.name===b.name);
+        if(api) {
+          api._displayP50 = b.p50||api.p50;
+          api._displayP95 = b.p95||api.p95;
+          api._displayP99 = b.p99||api.p99;
+        }
+      });
+      renderLatencyBreakdown();
+      renderPerfTable();
+    })
+    .catch(() => console.log('Analytics fetch failed'));
+}
+
+// ==================== COPY ====================
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(()=>showToast('Copied to clipboard','green'));
+}
+
+// ==================== INIT ====================
+async function init() {
+  loadRealAPIs();
+  // Fetch real backend health
+  fetch(`${API_BASE}/health`)
+    .then(r => r.json())
+    .then(data => {
+      data.forEach(b => {
+        const api = APIS.find(a => a.name === b.name);
+        if (api) { api.status = b.status; api.p50 = b.latency; }
+      });
+      renderApiHealthGrid();
+    });
+
+  // Fetch real APIs from WSO2
+  fetch(`${API_BASE}/apis`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.list && data.list.length) {
+        console.log('WSO2 APIs loaded:', data.count);
+      }
+    });
+
+  // Overview
+  renderApiHealthGrid();
+  renderEventFeed();
+  renderSparkline();
+  renderAlertsBanner();
+  // Analytics
+  renderLatencyBreakdown();
+  renderPerfTable();
+  updateAnalyticsForWindow('1H');
+  // Tenants
+  renderTenantTable();
+  // APIs
+  renderApiRegistry();
+  // Subs
+  renderSubscriptions();
+  // Throttle
+  renderThrottleTiers();
+  renderDenyRules();
+  // Pipeline
+  renderPipelineJobs();
+  renderPipelineHistory();
+  renderSmokeTests();
+  // Notifications
+  renderNotifications();
+  // Tester init
+  updateTestEndpoints();
+  // Charts — deferred to ensure DOM is ready
+  setTimeout(()=>{
+    initVolumeChart();
+    initCodesChart();
+    initApiCallsChart();
+  }, 100);
+
+  // Re-render codes chart after 15s when real data has loaded
+  setTimeout(initCodesChart, 15000);
+  // Start live updates
+  startLiveLogs();
+  setInterval(updateLiveMetrics, 5000);
+  setInterval(() => {
+  fetch(`${API_BASE}/notifications`)
+    .then(r => r.json())
+    .then(data => {
+      // Always update badge
+      const badge = document.querySelector('.notif-badge');
+      if (badge) badge.textContent = data.length;
+
+      // If modal is open update list too
+      const modal = document.getElementById('notifModal');
+      if (modal && modal.classList.contains('open')) {
+        renderNotifications();
+      }
+
+      // Show toast for new critical notifications
+      if (data.length > 0 && data[0].level === 'error') {
+        const lastSeen = window._lastNotifId || 0;
+        if (data[0].id > lastSeen) {
+          window._lastNotifId = data[0].id;
+          showToast('🚨 ' + data[0].text.substring(0, 60), 'red');
+        }
+      }
+    }).catch(()=>{});
+}, 5000);
+  setInterval(pollBackendHealth, 5000);
+  setInterval(initCodesChart, 10000);
+  setInterval(renderSmokeTests, 30000);
+  setInterval(renderEventFeed, 10000);
+  // Initial log entries
+  for(let i=0;i<12;i++) {
+    setTimeout(()=>{
+      const tpl=LOG_TEMPLATES[Math.floor(Math.random()*LOG_TEMPLATES.length)]();
+      appendLog(tpl.level,tpl.msg);
+    },i*200);
+  }
+}
+
+function pollBackendHealth() {
+  fetch(`${API_BASE}/health`)
+    .then(r => r.json())
+    .then(data => {
+      let changed = false;
+      data.forEach(b => {
+        const api = APIS.find(a => a.name === b.name);
+        if (api) {
+          if (api.status !== b.status) {
+            changed = true;
+            if (b.status === 'down') showToast(`⚠ ${b.name} is DOWN`, 'red');
+            else showToast(`✓ ${b.name} is back UP`, 'green');
+          }
+          // Update with real metrics
+          api.status = b.status;
+          api.p50 = b.p50 || b.avgLatency || api.p50;
+          api.p95 = b.p95 || api.p95;
+          api.p99 = b.p99 || api.p99;
+          api.calls = b.callsPerMin || api.calls;
+          api.err = parseFloat(b.errorRate) || api.err;
+        }
+      });
+      renderApiHealthGrid();
+      renderPerfTable();
+      renderLatencyBreakdown();
+
+      // Update topbar RPS with real data
+      const totalRPS = data.reduce((sum, b) => sum + (b.callsPerMin || 0), 0);
+      if (totalRPS > 0) {
+        document.getElementById('tRPS').textContent = totalRPS;
+        document.getElementById('m_rps').textContent = totalRPS;
+      }
+
+      // Update overall error rate
+      const totalCalls = data.reduce((sum, b) => sum + (b.calls || 0), 0);
+      const totalErrors = data.reduce((sum, b) => sum + (b.errors || 0), 0);
+      if (totalCalls > 0) {
+        const errRate = ((totalErrors / totalCalls) * 100).toFixed(2);
+        document.getElementById('tErrRate').textContent = errRate + '%';
+        document.getElementById('m_errRate').textContent = errRate + '%';
+      }
+    })
+    .catch(() => showToast('Dashboard server unreachable', 'red'));
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
