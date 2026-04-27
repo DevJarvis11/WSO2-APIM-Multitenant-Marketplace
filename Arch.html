@@ -305,12 +305,14 @@
   <div class="header-icon">W2</div>
   <div>
     <div class="header-title">WSO2 APIM — Multi-Tenant API Marketplace</div>
-    <div class="header-sub">finance.com · logistics.com · WSO2 4.6.0 · OAuth2 · Docker Compose</div>
+    <div class="header-sub">finance.com · logistics.com · WSO2 4.6.0 · OAuth2 · Docker Compose · Choreo Analytics · NOC Dashboard</div>
   </div>
   <div class="header-badges">
-    <span class="hbadge">4 APIs</span>
+    <span class="hbadge">5 APIs</span>
     <span class="hbadge">2 Tenants</span>
-    <span class="hbadge">88% Cert Coverage</span>
+    <span class="hbadge">Dashboard :5000</span>
+    <span class="hbadge">Choreo Analytics</span>
+    <span class="hbadge">91% Cert Coverage</span>
   </div>
 </div>
 
@@ -319,6 +321,8 @@
   <button class="tab active" onclick="showTab('arch',this)">Architecture</button>
   <button class="tab" onclick="showTab('flow',this)">API Flow</button>
   <button class="tab" onclick="showTab('workflow',this)">User Workflow</button>
+  <button class="tab" onclick="showTab('dashboard',this)">Dashboard</button>
+  <button class="tab" onclick="showTab('cicd',this)">CI/CD & Analytics</button>
   <button class="tab" onclick="showTab('creds',this)">Credentials & Ports</button>
 </div>
 
@@ -387,12 +391,38 @@
 
   <!-- Docker -->
   <div class="docker-row">
-    <div class="docker-title">Docker Compose — Node.js/Express backends (static JSON · no database)</div>
+    <div class="docker-title">Docker Compose — Node.js/Express backends (sql.js SQLite · /_metrics endpoint on each)</div>
     <div class="grid4">
       <div class="docker-box"><div class="docker-name">invoice-service</div><div class="docker-port">:4001</div></div>
       <div class="docker-box"><div class="docker-name">payment-service</div><div class="docker-port">:4002</div></div>
       <div class="docker-box"><div class="docker-name">shipment-service</div><div class="docker-port">:4003</div></div>
       <div class="docker-box"><div class="docker-name">route-service</div><div class="docker-port">:4004</div></div>
+    </div>
+  </div>
+
+  <div class="arrow-row"><div class="arrow-line"></div><div class="arrow-label">metrics + logs</div><div class="arrow-head"></div></div>
+
+  <!-- Dashboard + Choreo row -->
+  <div class="grid2" style="margin-bottom:10px">
+    <div class="tenant-card" style="border-color:#1d63dc;border-top:3px solid #1d63dc">
+      <div class="tenant-title" style="color:#1d63dc">NOC Dashboard — :5000</div>
+      <div style="font-size:11px;color:#444;margin-bottom:8px">Real-time operations dashboard · single HTML file · 2400+ lines</div>
+      <div class="grid2">
+        <div class="api-mini"><div class="api-mini-name">WSO2 REST Proxy</div><div class="api-mini-detail">Publisher + Admin APIs</div></div>
+        <div class="api-mini"><div class="api-mini-name">Log Parser (SSE)</div><div class="api-mini-detail">wso2carbon.log stream</div></div>
+        <div class="api-mini"><div class="api-mini-name">Metrics Aggregator</div><div class="api-mini-detail">/_metrics from backends</div></div>
+        <div class="api-mini"><div class="api-mini-name">GitHub Actions API</div><div class="api-mini-detail">Real CI/CD status</div></div>
+      </div>
+    </div>
+    <div class="tenant-card" style="border-color:#6B2FD9;border-top:3px solid #6B2FD9">
+      <div class="tenant-title" style="color:#6B2FD9">Choreo Analytics Cloud</div>
+      <div style="font-size:11px;color:#444;margin-bottom:8px">Real-time API insights · on-prem key integration · 236+ calls recorded</div>
+      <div class="grid2">
+        <div class="api-mini"><div class="api-mini-name">Total Traffic</div><div class="api-mini-detail">236+ calls confirmed</div></div>
+        <div class="api-mini"><div class="api-mini-name">Error Rate</div><div class="api-mini-detail">70% error rate captured</div></div>
+        <div class="api-mini"><div class="api-mini-name">P95 Latency</div><div class="api-mini-detail">60ms confirmed</div></div>
+        <div class="api-mini"><div class="api-mini-name">API Request Summary</div><div class="api-mini-detail">Per-API breakdown</div></div>
+      </div>
     </div>
   </div>
 
@@ -529,6 +559,23 @@
         <div class="day-step"><span class="day-arrow" style="color:var(--green)">→</span> Add wire log config to log4j2.properties → test error codes</div>
       </div>
     </div>
+
+    <div class="day-row">
+      <div class="day-header">
+        <span class="badge" style="background:#e8f4ff;color:#1d63dc">Day 7</span>
+        <span class="day-title" style="color:#1d63dc">Dashboard + Choreo Analytics</span>
+      </div>
+      <div class="day-steps" style="border-color:rgba(29,99,220,0.2)">
+        <div class="day-step"><span class="day-arrow" style="color:#1d63dc">→</span> mkdir dashboard && npm install express cors node-fetch</div>
+        <div class="day-step"><span class="day-arrow" style="color:#1d63dc">→</span> Build server.js — WSO2 REST proxy + log parser + metrics aggregator</div>
+        <div class="day-step"><span class="day-arrow" style="color:#1d63dc">→</span> Add /_metrics endpoint to all 4 backend services → docker compose up -d --build</div>
+        <div class="day-step"><span class="day-arrow" style="color:#1d63dc">→</span> Wire dashboard to real health, APIs, logs, status codes, GitHub Actions</div>
+        <div class="day-step"><span class="day-arrow" style="color:#1d63dc">→</span> Configure Choreo: deployment.toml → [apim.analytics] config_endpoint + auth_token</div>
+        <div class="day-step"><span class="day-arrow" style="color:#1d63dc">→</span> Verify Choreo: 236+ calls in Insights dashboard, 60ms P95 confirmed</div>
+        <div class="day-step"><span class="day-arrow" style="color:#1d63dc">→</span> GITHUB_TOKEN=ghp_xxx node server.js — CI/CD page shows real run history</div>
+        <div class="day-step"><span class="day-arrow" style="color:#1d63dc">→</span> git add . && git commit && git push origin main</div>
+      </div>
+    </div>
   </div>
 
   <div class="section-gap">
@@ -542,6 +589,169 @@
       <div class="oauth-step"><div class="oauth-num">6</div><div><span class="oauth-step-name">Gateway validates</span> <span class="oauth-step-detail">— signature + expiry + scope + subscription</span></div></div>
       <div class="oauth-step"><div class="oauth-num">7</div><div><span class="oauth-step-name">Backend called</span> <span class="oauth-step-detail">— X-Tenant-ID header added by mediation sequence</span></div></div>
       <div class="oauth-step" style="margin-bottom:0"><div class="oauth-num">8</div><div><span class="oauth-step-name">Response returned</span> <span class="oauth-step-detail">— JSON data from Node.js service</span></div></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div id="tab-dashboard" class="tab-panel">
+<div class="content">
+
+  <div class="section-gap">
+    <div class="section-label">Dashboard Pages — Real vs Mock</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table">
+        <thead><tr style="background:var(--blue)">
+          <th>Page</th><th>Real Data Source</th><th>Mock / Simulated</th>
+        </tr></thead>
+        <tbody>
+          <tr><td><strong>Live Operations</strong></td><td>RPS, P95, error rate, health grid (backend /_metrics), response code donut (log parser)</td><td>Request volume chart, throttle events card</td></tr>
+          <tr><td><strong>Analytics</strong></td><td>Total calls, P50/P95/P99, API bar chart, performance table (backend metrics)</td><td>Latency trend chart</td></tr>
+          <tr><td><strong>API Registry</strong></td><td>All APIs from WSO2 Publisher REST API — both tenants live</td><td>None — fully real</td></tr>
+          <tr><td><strong>Publish API</strong></td><td>Creates real API in WSO2 via 4-step wizard → Publisher REST API</td><td>None — fully real</td></tr>
+          <tr><td><strong>API Tester</strong></td><td>Real OAuth2 tokens, real gateway requests, real scope enforcement 403</td><td>None — fully real</td></tr>
+          <tr><td><strong>Live Logs</strong></td><td>WSO2 wso2carbon.log via file watcher + SSE stream</td><td>None — fully real</td></tr>
+          <tr><td><strong>CI/CD Pipeline</strong></td><td>GitHub Actions run history, job statuses, trigger button</td><td>Smoke test latency</td></tr>
+          <tr><td><strong>Notifications</strong></td><td>Real WSO2 auth failure log events — auto-badge, toast, clear</td><td>None — fully real</td></tr>
+          <tr><td><strong>Tenants</strong></td><td>Dev Portal links open real WSO2 portal</td><td>Call counts, API counts</td></tr>
+          <tr><td><strong>Subscriptions</strong></td><td>Hardcoded 6 rows</td><td>All mock</td></tr>
+          <tr><td><strong>Throttling</strong></td><td>Tier table, deny rules</td><td>All mock</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-gap">
+    <div class="section-label">Dashboard Proxy API Endpoints</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table">
+        <thead><tr style="background:var(--teal)">
+          <th>Method</th><th>Endpoint</th><th>Description</th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="mono">GET</td><td class="code-cell">/api/health</td><td>Backend health + real metrics (calls, p95, errors per service)</td></tr>
+          <tr><td class="mono">GET</td><td class="code-cell">/api/apis</td><td>All APIs from WSO2 Publisher — both tenants</td></tr>
+          <tr><td class="mono">POST</td><td class="code-cell">/api/apis</td><td>Create API in WSO2 Publisher</td></tr>
+          <tr><td class="mono">POST</td><td class="code-cell">/api/apis/:id/publish</td><td>Publish API to gateway</td></tr>
+          <tr><td class="mono">POST</td><td class="code-cell">/api/token</td><td>OAuth2 token proxy to WSO2</td></tr>
+          <tr><td class="mono">GET</td><td class="code-cell">/api/logs/stream</td><td>SSE real-time WSO2 log stream</td></tr>
+          <tr><td class="mono">GET</td><td class="code-cell">/api/logs/recent</td><td>Last 100 log lines from wso2carbon.log</td></tr>
+          <tr><td class="mono">GET</td><td class="code-cell">/api/logs/counts</td><td>INFO/WARN/ERROR counts from log parser</td></tr>
+          <tr><td class="mono">GET</td><td class="code-cell">/api/gateway/statuscodes</td><td>200/401/403/429 counts from log pattern matching</td></tr>
+          <tr><td class="mono">GET</td><td class="code-cell">/api/pipeline/runs</td><td>GitHub Actions run history (real)</td></tr>
+          <tr><td class="mono">GET</td><td class="code-cell">/api/pipeline/jobs</td><td>Latest run job statuses (real)</td></tr>
+          <tr><td class="mono">POST</td><td class="code-cell">/api/pipeline/trigger</td><td>Trigger GitHub Actions workflow_dispatch</td></tr>
+          <tr><td class="mono">GET</td><td class="code-cell">/api/notifications</td><td>Real gateway event notifications</td></tr>
+          <tr><td class="mono">POST</td><td class="code-cell">/api/notifications/clear</td><td>Clear all notifications</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-gap">
+    <div class="section-label">Backend Metrics Middleware</div>
+    <div class="card">
+      <div style="font-size:12px;color:#444;margin-bottom:10px">Each backend service has a <code style="background:#f0f4ff;padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:11px">/_metrics</code> endpoint returning real-time data:</div>
+      <div class="oauth-step"><div class="oauth-num">calls</div><div><span class="oauth-step-name">Total request count</span> <span class="oauth-step-detail">— cumulative since container start</span></div></div>
+      <div class="oauth-step"><div class="oauth-num">p50</div><div><span class="oauth-step-name">50th percentile latency</span> <span class="oauth-step-detail">— from last 60 seconds of requests</span></div></div>
+      <div class="oauth-step"><div class="oauth-num">p95</div><div><span class="oauth-step-name">95th percentile latency</span> <span class="oauth-step-detail">— from last 60 seconds of requests</span></div></div>
+      <div class="oauth-step"><div class="oauth-num">err%</div><div><span class="oauth-step-name">Error rate percentage</span> <span class="oauth-step-detail">— requests with status >= 400 / total</span></div></div>
+      <div class="oauth-step" style="margin-bottom:0"><div class="oauth-num">sc</div><div><span class="oauth-step-name">Status code breakdown</span> <span class="oauth-step-detail">— {"200":150,"401":5} per service</span></div></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ═══ CI/CD & ANALYTICS ═══ -->
+<div id="tab-cicd" class="tab-panel">
+<div class="content">
+
+  <div class="section-gap">
+    <div class="section-label">GitHub Actions CI/CD Pipeline — 5 Jobs</div>
+    <div class="day-row">
+      <div class="day-header">
+        <span class="badge" style="background:var(--lgreen);color:var(--green)">Job 1</span>
+        <span class="day-title" style="color:var(--green)">Lint OpenAPI Specifications</span>
+      </div>
+      <div class="day-steps" style="border-color:rgba(26,92,42,0.2)">
+        <div class="day-step"><span class="day-arrow" style="color:var(--green)">→</span> npm install -g @stoplight/spectral-cli</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--green)">→</span> spectral lint api-definitions/*.yaml --fail-severity error</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--green)">→</span> Custom rules: api-must-have-description, operations-must-have-security</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--green)">→</span> Duration: ~20s</div>
+      </div>
+    </div>
+    <div class="day-row">
+      <div class="day-header">
+        <span class="badge" style="background:var(--lblue);color:var(--blue)">Jobs 2+3</span>
+        <span class="day-title" style="color:var(--blue)">Deploy TenantA + TenantB (parallel)</span>
+      </div>
+      <div class="day-steps" style="border-color:rgba(26,60,110,0.2)">
+        <div class="day-step"><span class="day-arrow" style="color:var(--blue)">→</span> apictl add env finance-local --apim https://localhost:9443</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--blue)">→</span> apictl login finance-local -u financead@finance.com -p FinAdmin@123 -k</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--blue)">→</span> apictl get apis -e finance-local -k (verify APIs exist)</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--blue)">→</span> apictl export api --name InvoiceAPI --version 1.0 --provider alice@finance.com</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--blue)">→</span> Duration: ~30s each (parallel execution)</div>
+      </div>
+    </div>
+    <div class="day-row">
+      <div class="day-header">
+        <span class="badge" style="background:var(--lteal);color:var(--teal)">Job 4</span>
+        <span class="day-title" style="color:var(--teal)">Post-Deploy Smoke Test</span>
+      </div>
+      <div class="day-steps" style="border-color:rgba(15,94,110,0.2)">
+        <div class="day-step"><span class="day-arrow" style="color:var(--teal)">→</span> Get OAuth2 token for FinanceApp and LogisticsApp</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--teal)">→</span> curl -k https://localhost:8243/t/finance.com/invoices/1.0/invoices → expect 200</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--teal)">→</span> curl -k https://localhost:8243/t/logistics.com/shipmentapi/1.0/shipments → expect 200</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--teal)">→</span> All 4 gateway URLs verified — fails pipeline if any return non-200</div>
+      </div>
+    </div>
+    <div class="day-row">
+      <div class="day-header">
+        <span class="badge" style="background:var(--lpurple);color:var(--purple)">Job 5</span>
+        <span class="day-title" style="color:var(--purple)">Slack Notification</span>
+      </div>
+      <div class="day-steps" style="border-color:rgba(74,45,122,0.2)">
+        <div class="day-step"><span class="day-arrow" style="color:var(--purple)">→</span> Post success/failure summary to SLACK_WEBHOOK_URL secret</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--purple)">→</span> Includes run number, duration, status of each job</div>
+        <div class="day-step"><span class="day-arrow" style="color:var(--purple)">→</span> Duration: ~10s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-gap">
+    <div class="section-label">Choreo Analytics Integration</div>
+    <div class="card">
+      <div class="oauth-step"><div class="oauth-num" style="background:#6B2FD9">1</div><div><span class="oauth-step-name">Sign up at console.choreo.dev</span> <span class="oauth-step-detail">— create organisation MultiTenant</span></div></div>
+      <div class="oauth-step"><div class="oauth-num" style="background:#6B2FD9">2</div><div><span class="oauth-step-name">Generate On-prem Key</span> <span class="oauth-step-detail">— Settings → On-prem Keys → Generate Key → name: WSO2-Local-APIM</span></div></div>
+      <div class="oauth-step"><div class="oauth-num" style="background:#6B2FD9">3</div><div><span class="oauth-step-name">Configure deployment.toml</span> <span class="oauth-step-detail">— [apim.analytics] enable=true, config_endpoint + auth_token</span></div></div>
+      <div class="oauth-step"><div class="oauth-num" style="background:#6B2FD9">4</div><div><span class="oauth-step-name">Restart WSO2</span> <span class="oauth-step-detail">— api-manager.sh restart — wait 3 minutes</span></div></div>
+      <div class="oauth-step"><div class="oauth-num" style="background:#6B2FD9">5</div><div><span class="oauth-step-name">Generate traffic</span> <span class="oauth-step-detail">— 30+ gateway requests with valid token</span></div></div>
+      <div class="oauth-step" style="margin-bottom:0"><div class="oauth-num" style="background:#6B2FD9">6</div><div><span class="oauth-step-name">View in Choreo Insights</span> <span class="oauth-step-detail">— Total Traffic: 236+ · Error Rate: 70% · P95: 60ms confirmed</span></div></div>
+    </div>
+  </div>
+
+  <div class="section-gap">
+    <div class="section-label">Key Issues Fixed During Development</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="data-table">
+        <thead><tr style="background:var(--coral)">
+          <th>Issue</th><th>Error</th><th>Fix Applied</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Duplicate analytics config</td><td class="mono" style="font-size:10px">[apim.analytics] previously defined</td><td>Remove duplicate TOML block — only one allowed</td></tr>
+          <tr><td>Choreo wrong config format</td><td class="mono" style="font-size:10px">Analytics Config Endpoint not provided</td><td>Use config_endpoint + auth_token (not url_group)</td></tr>
+          <tr><td>WSO2 DB locked on restart</td><td class="mono" style="font-size:10px">WSO2SHARED_DB.mv.db file is locked</td><td>kill -9 all Java, wait 20s, verify lsof clean</td></tr>
+          <tr><td>apictl import rejects YAML</td><td class="mono" style="font-size:10px">zip: not a valid zip file</td><td>apictl only imports ZIPs — use Publisher portal for YAML</td></tr>
+          <tr><td>Publish API unrecognized field</td><td class="mono" style="font-size:10px">Unrecognized property 'gatewayEnvironments'</td><td>Remove gatewayEnvironments — use policies array</td></tr>
+          <tr><td>Scope not enforcing</td><td>Wrong-scope token gets 200</td><td>Publisher → Runtime → OAuth2 only, set Mandatory</td></tr>
+          <tr><td>Response donut not updating</td><td>Always shows only green 200</td><td>Force destroy+delete chart before recreating</td></tr>
+          <tr><td>SSE stream dropping</td><td class="mono" style="font-size:10px">ERR_INCOMPLETE_CHUNKED_ENCODING</td><td>Add 15s keepalive ping + error handlers</td></tr>
+          <tr><td>PAT in ecosystem.config.js</td><td>GitHub push blocked — secret detected</td><td>Replace with process.env.GITHUB_TOKEN || ''</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -563,6 +773,8 @@
       <div class="url-item"><div class="url-name">Carbon Console</div><div class="url-val">https://localhost:9443/carbon</div></div>
       <div class="url-item"><div class="url-name">Token Endpoint</div><div class="url-val">https://localhost:9443/oauth2/token</div></div>
       <div class="url-item"><div class="url-name">API Gateway HTTPS</div><div class="url-val">https://localhost:8243/t/{tenant}/{ctx}/1.0/</div></div>
+      <div class="url-item" style="border-color:#1d63dc"><div class="url-name" style="color:#1d63dc">NOC Dashboard</div><div class="url-val">http://localhost:5000</div></div>
+      <div class="url-item" style="border-color:#6B2FD9"><div class="url-name" style="color:#6B2FD9">Choreo Analytics</div><div class="url-val">https://console.choreo.dev → Insights → Usage</div></div>
     </div>
   </div>
 
