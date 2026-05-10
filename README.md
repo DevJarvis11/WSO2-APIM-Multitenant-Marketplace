@@ -11,7 +11,7 @@
 
 **A production-grade multi-tenant API gateway built on WSO2 API Manager 4.6.0**
 
-*Two isolated tenant organisations sharing one APIM instance — complete with OAuth2 security, custom mediation, rate limiting, CI/CD, Choreo analytics, and a real-time NOC operations dashboard.*
+*Two isolated tenant organisations sharing one APIM instance — complete with OAuth2 security, custom mediation, rate limiting, CI/CD, Choreo analytics, and a real-time operations dashboard.*
 
 [Architecture](#architecture) • [Quick Start](#quick-start) • [API Reference](#api-reference) • [Dashboard](#live-ops-dashboard) • [Security](#security-model)
 
